@@ -264,14 +264,15 @@
     const pad=Math.max(16,Math.floor(W*0.02)); 
     const cardW=Math.min(880,W-pad*2); 
     const cardH=Math.min(560,H-pad*3-64); 
-    const cx=(W-cardW)/2, cy=pad*2; 
-    const buttons=[],clickZones=[],inputs=[];
+    const cx=(W-cardW)/2;
+    let cy=pad*2;
+    const buttons=[],clickZones=[],inputs[];
 
     // Barra superior
     const bar={x:pad,y:pad,w:W-pad*2,h:20}; 
-    const prog={x:bar.x,y:bar.y,w:Math.min(420,bar.w*0.55),h:16}; 
-    const streakBox={x:bar.x+prog.w+12,y:bar.y-2,w:220,h:22}; 
-
+    const prog={x:bar.x,y:bar.y+24,w:Math.min(420,bar.w*0.55),h:16}; 
+    const streakBox={x:prog.x+prog.w+12,y:prog.y,w:220,h:22}; 
+    cy = prog.y + Math.max(prog.h,streakBox.h) + pad;
     // Botões principais
     const topBtnW=112, topBtnH=36; 
     const rightBoxW=topBtnW*5+16*4; 
@@ -430,7 +431,7 @@
     drawIconButton({x:L.gear.x,y:L.gear.y,w:L.gear.w || 40,h:L.gear.h || 36},'⚙');
 
     const pct=Math.max(0,Math.min(1,(stats.studiedToday||0)/(stats.dailyGoal||20))); 
-    drawProgressBar(L.bar.x,L.bar.y+26,Math.min(420,L.bar.w*0.55),16,pct); 
+      drawProgressBar(L.prog.x,L.prog.y,L.prog.w,L.prog.h,pct);
     roundRect(L.streakBox.x,L.streakBox.y,L.streakBox.w,L.streakBox.h,12); ctx.fillStyle='#0f1422'; ctx.fill(); ctx.strokeStyle=C.stroke; ctx.stroke(); ctx.fillStyle=C.sub; ctx.font='600 12px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(`Streak: ${stats.streak||0} dia(s)`, L.streakBox.x+L.streakBox.w/2, L.streakBox.y+L.streakBox.h/2); 
     roundRect(L.card.x,L.card.y,L.card.w,L.card.h,20); ctx.fillStyle=C.card; ctx.fill(); ctx.strokeStyle=C.stroke; ctx.stroke(); 
 
