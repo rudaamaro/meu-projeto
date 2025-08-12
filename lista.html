@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Flashcards JP↔PT</title>
+  <title>Lista - Flashcards JP↔PT</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -17,9 +17,15 @@
     </nav>
   </header>
   <main>
-    <h1>Flashcards JP↔PT — Canvas</h1>
-    <p>Bem-vindo! Use o menu acima para navegar entre os modos.</p>
+    <h1>Lista de cartas</h1>
+    <table id="deck" class="table">
+      <thead>
+        <tr><th>Hiragana</th><th>Romaji</th><th>PT-BR</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </main>
   <script src="js/main.js"></script>
+  <script src="js/lista.js"></script>
 </body>
 </html>
