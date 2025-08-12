@@ -28,7 +28,8 @@
   const SIZES = {
     hiraganaStudyFactor: 0.13,   // antes ~0.20
     hiraganaStudyMin: 28,        // antes 36
-    hiraganaQuizPx: 18,          // antes 24
+    hiraganaQuizPx: 24,          // antes 18
+    hiraganaQuizOffset: 40,      // distância extra abaixo do romaji no Quiz
     hiraganaManagePx: 12         // tabela "Lista"
   };
 
@@ -506,7 +507,7 @@
         ctx.fillText(q.current.romaji, L.card.x + L.card.w/2, romajiY);
         const m = ctx.measureText(q.current.romaji);
         const romajiH = (m.actualBoundingBoxAscent || romajiSize * 0.8) + (m.actualBoundingBoxDescent || romajiSize * 0.2);
-        const hiraganaY = romajiY + romajiH + 8;
+        const hiraganaY = romajiY + romajiH + 8 + SIZES.hiraganaQuizOffset;
         // Hiragana menor
         ctx.fillStyle = C.sub;
         ctx.font = `600 ${SIZES.hiraganaQuizPx}px system-ui`;
