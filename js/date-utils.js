@@ -1,0 +1,3 @@
+export function todayStr(d=new Date()){const y=d.getFullYear(),m=('0'+(d.getMonth()+1)).slice(-2),day=('0'+d.getDate()).slice(-2);return `${y}-${m}-${day}`;}
+export function addDays(iso,n){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return todayStr(d);}
+export function applyRollover(stats,saveStats){const t=todayStr(); if(!stats.lastStudy){stats.lastStudy=t;stats.studiedToday=0;saveStats(stats);return;}if(stats.lastStudy!==t){const y=new Date(stats.lastStudy+'T00:00:00');const d=new Date(t+'T00:00:00');const diff=Math.round((d-y)/86400000);stats.streak=(diff===1)?(stats.streak+1):1;stats.studiedToday=0;stats.lastStudy=t;saveStats(stats);}}
