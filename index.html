@@ -1,25 +1,574 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Flashcards JP↔PT</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>Flashcards JP↔PT — Canvas</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; background:#0b0f14; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; }
+    canvas { display:block; width:100vw; height:100vh; }
+  </style>
 </head>
 <body>
-  <header>
-    <nav>
-      <a href="index.html">Início</a>
-      <a href="quiz.html">Quiz</a>
-      <a href="estudo.html">Estudar</a>
-      <a href="resumo.html">Resumo</a>
-      <a href="lista.html">Lista</a>
-    </nav>
-  </header>
-  <main>
-    <h1>Flashcards JP↔PT — Canvas</h1>
-    <p>Bem-vindo! Use o menu acima para navegar entre os modos.</p>
-  </main>
-  <script src="js/main.js"></script>
+  <canvas id="app"></canvas>
+  <script>
+  const cvs = document.getElementById('app');
+  const ctx = cvs.getContext('2d');
+  function fitCanvas(){
+    const dpr=Math.max(1,Math.floor(window.devicePixelRatio||1));
+    const w=Math.floor(window.innerWidth), h=Math.floor(window.innerHeight);
+    cvs.width=w*dpr; cvs.height=h*dpr; cvs.style.width=w+'px'; cvs.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  window.addEventListener('resize',fitCanvas); fitCanvas();
+
+  const C={card:'#121826',accent:'#43b6ff',accent2:'#7cffad',text:'#e7eef7',sub:'#9fb3c8',danger:'#ff6b6b',warn:'#ffd166',stroke:'rgba(255,255,255,0.08)'};
+
+  // ---- TAMANHOS (centraliza o controle do tamanho do hiragana)
+  const SIZES = {
+    hiraganaStudyFactor: 0.13,   // antes ~0.20
+    hiraganaStudyMin: 28,        // antes 36
+    hiraganaQuizPx: 24,          // antes 18
+    hiraganaQuizOffset: 40,      // distância extra abaixo do romaji no Quiz
+    hiraganaManagePx: 12         // tabela "Lista"
+  };
+
+  function roundRect(x,y,w,h,r=16){ r=Math.min(r, Math.min(w,h)/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+  function drawButton(b){const {x,y,w,h,label,fill=C.accent,stroke=C.stroke,text=C.text}=b;roundRect(x,y,w,h,14);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}ctx.fillStyle=text;ctx.font=`600 ${Math.max(12,Math.floor(h*0.42))}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(label),x+w/2,y+h/2+1);}  
+  function drawIconButton(b,icon){const {x,y,w,h,fill=C.accent}=b; roundRect(x,y,w,h,14); ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=C.stroke; ctx.stroke(); ctx.fillStyle='#06131f'; ctx.font=`700 ${Math.max(12,Math.floor(h*0.6))}px system-ui`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(icon,x+w/2,y+h/2+1);} 
+  function drawPill(p){const {x,y,w,h,label,active=false}=p; roundRect(x,y,w,h,999); ctx.fillStyle=active?C.accent:'#1f2937'; ctx.fill(); ctx.strokeStyle=active?'rgba(67,182,255,0.5)':C.stroke; ctx.stroke(); ctx.fillStyle=active?'#06131f':C.text; ctx.font='600 13px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(label,x+w/2,y+h/2+1);}  
+  function drawInput(inp){const {x,y,w,h,label,value,placeholder='',focused=false}=inp;roundRect(x,y,w,h,12);ctx.fillStyle='#0f1422';ctx.fill();ctx.strokeStyle=focused?C.accent:C.stroke;ctx.lineWidth=focused?2:1;ctx.stroke();ctx.fillStyle=C.sub;ctx.font='600 12px system-ui';ctx.textAlign='left';ctx.textBaseline='top';if(label)ctx.fillText(label,x+12,y+8);ctx.font='500 18px system-ui';ctx.fillStyle=value?C.text:'rgba(231,238,247,0.4)';const shown=value||placeholder;ctx.fillText(shown+(focused&&tick()%60<30?'|':''),x+12,y+(label?28:12));}
+  function drawProgressBar(x,y,w,h,p){roundRect(x,y,w,h,12);ctx.fillStyle='#0f1422';ctx.fill();const ww=Math.max(0,Math.min(1,p))*w;roundRect(x,y,ww,h,12);const g=ctx.createLinearGradient(x,y,x+w,y);g.addColorStop(0,C.accent);g.addColorStop(1,C.accent2);ctx.fillStyle=g;ctx.fill();ctx.strokeStyle=C.stroke;ctx.stroke();ctx.font='600 12px system-ui';ctx.fillStyle=C.text;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(Math.round(Math.max(0,Math.min(1,p))*100)+'%',x+w/2,y+h/2);}  
+
+  // Área oculta p/ colar no modo Bulk
+  const pasteArea=document.createElement('textarea'); pasteArea.style.position='fixed'; pasteArea.style.opacity='0'; pasteArea.style.pointerEvents='none'; document.body.appendChild(pasteArea);
+
+  const LS_KEYS={deck:'jpDeck_v4',stats:'jpStats_v1'};
+  const defaultDeck=[
+    {id:'1',hiragana:'こんにちは',romaji:'konnichiwa',pt:'olá|ola|boa tarde',due:todayStr(),ef:2.5,ivl:0,reps:0,ok:0,err:0,cat:'none'},
+    {id:'2',hiragana:'ありがとう',romaji:'arigatou',pt:'obrigado|obrigada',due:todayStr(),ef:2.5,ivl:0,reps:0,ok:0,err:0,cat:'none'},
+    {id:'3',hiragana:'すみません',romaji:'sumimasen',pt:'desculpa|com licença|com licenca',due:todayStr(),ef:2.5,ivl:0,reps:0,ok:0,err:0,cat:'none'}
+  ];
+  function loadDeck(){try{return migrate(JSON.parse(localStorage.getItem(LS_KEYS.deck))||defaultDeck.slice());}catch(e){return defaultDeck.slice();}}
+  function saveDeck(){localStorage.setItem(LS_KEYS.deck,JSON.stringify(deck));}
+  const defaultStats={streak:0,lastStudy:null,studiedToday:0,dailyGoal:20};
+  function loadStats(){try{return Object.assign({},defaultStats,JSON.parse(localStorage.getItem(LS_KEYS.stats)||'{}'));}catch(e){return {...defaultStats};}}
+  function saveStats(){localStorage.setItem(LS_KEYS.stats,JSON.stringify(stats));}
+
+  // MIGRATION
+  function migrate(a){
+    return (a||[]).map(c=>({
+      id:c.id||String(Date.now()+Math.random()),
+      hiragana:c.hiragana||'',
+      romaji:(c.romaji||'').toLowerCase(),
+      pt:(c.pt||'').toLowerCase(),
+      due:c.due||todayStr(),
+      ef:typeof c.ef==='number'?c.ef:2.5,
+      ivl:typeof c.ivl==='number'?c.ivl:0,
+      reps:c.reps||0, ok:c.ok||0, err:c.err||0,
+      cat:(c.cat==='dificil'||c.cat==='medio'||c.cat==='facil')?c.cat:'none'
+    }));
+  }
+
+  let deck=loadDeck(); let stats=loadStats();
+  function todayStr(d=new Date()){const y=d.getFullYear(),m=('0'+(d.getMonth()+1)).slice(-2),day=('0'+d.getDate()).slice(-2);return `${y}-${m}-${day}`;}
+  function addDays(iso,n){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return todayStr(d);}  
+  function applyRollover(){const t=todayStr(); if(!stats.lastStudy){stats.lastStudy=t;stats.studiedToday=0;saveStats();return;} if(stats.lastStudy!==t){const y=new Date(stats.lastStudy+'T00:00:00');const d=new Date(t+'T00:00:00');const diff=Math.round((d-y)/86400000);stats.streak=(diff===1)?(stats.streak+1):1;stats.studiedToday=0;stats.lastStudy=t;saveStats();}} applyRollover();
+
+  // SRS
+  function schedule(card,grade){const minEF=1.3; if(grade===0){card.err=(card.err||0)+1; card.reps=0; card.ef=Math.max(minEF,(card.ef||2.5)-0.2); card.ivl=1; card.due=addDays(todayStr(),1); return;} card.ok=(card.ok||0)+1; const ef=card.ef||2.5; if(card.reps===0){card.ivl=(grade===2)?3:1;} else {const mult=grade===2?(ef*1.3):ef; card.ivl=Math.max(1,Math.round(card.ivl*mult));} card.ef=Math.max(minEF,ef+(grade===2?+0.10:-0.05)); card.reps=(card.reps||0)+1; card.due=addDays(todayStr(),card.ivl);}  
+
+  // Estado
+  const State={
+    mode:'menu',
+    input:'',
+    showAnswer:false,
+    focusField:null,
+    addForm:{hiragana:'',romaji:'',pt:''},
+    message:'',
+    manage:{page:0,pageSize:10,selected:null,sort:'due'},
+    bulkText:'',
+    trainFilter:'todas',
+    quiz:{current:null, options:[], correctIndex:-1, selectedIndex:-1}
+  };
+
+  function dueCards(){const t=todayStr(); return deck.filter(c => (c.due||t) <= t);} 
+  let currentCard=null;
+
+  function pickNext(){
+    const p=dueCards();
+    currentCard=p.length?p[Math.floor(Math.random()*p.length)]:null; 
+    State.input=''; State.showAnswer=false;
+  }
+
+  function trainPool(){
+    if(State.trainFilter==='todas') return deck;
+    return deck.filter(c=>c.cat===State.trainFilter);
+  }
+
+  function pickNextTrain(){
+    const pool = trainPool();
+    currentCard=pool.length?pool[Math.floor(Math.random()*pool.length)]:null; 
+    State.input=''; State.showAnswer=false;
+  }
+
+  // QUIZ — múltipla escolha (mostra ROMAJI e 4 traduções)
+  function startQuizQuestion(){
+    if(deck.length===0){ State.quiz={current:null,options:[],correctIndex:-1,selectedIndex:-1}; return; }
+    const idx=Math.floor(Math.random()*deck.length);
+    const card=deck[idx];
+    const answers=parseAnswers(card.pt);
+    const correctPT = answers[Math.floor(Math.random()*Math.max(1,answers.length))] || '';
+
+    const pool = deck.filter((c,i)=> i!==idx && parseAnswers(c.pt).length>0);
+    shuffleInPlace(pool);
+    const distractors = [];
+    const used = new Set([normalizeBasic(correctPT)]);
+    for(const c of pool){
+      if(distractors.length>=3) break;
+      const list=parseAnswers(c.pt);
+      if(list.length===0) continue;
+      const pick=list[Math.floor(Math.random()*list.length)];
+      const norm=normalizeBasic(pick);
+      if(!used.has(norm)) { used.add(norm); distractors.push(pick); }
+    }
+    while(distractors.length<3){ distractors.push('—'); }
+
+    const options=[correctPT, ...distractors.slice(0,3)];
+    const order=[0,1,2,3]; shuffleInPlace(order);
+    const mapped = order.map(i=>options[i]);
+    const correctIndex = order.indexOf(0);
+
+    State.quiz={current:card, options:mapped, correctIndex:correctIndex, selectedIndex:-1};
+  }
+
+  function selectQuizOption(index){
+    if(State.quiz.selectedIndex!==-1) return;
+    State.quiz.selectedIndex=index;
+    const ok = index===State.quiz.correctIndex;
+    State.message = ok? '✔ Correto!':'✘ Resposta incorreta.';
+  }
+
+  function nextQuiz(){ startQuizQuestion(); State.message=''; }
+
+  function speakJP(t){if(!('speechSynthesis'in window)){State.message='TTS não suportado';return;} const u=new SpeechSynthesisUtterance(t); u.lang='ja-JP'; const vs=speechSynthesis.getVoices(); const jp=vs.find(v=>/ja-JP|Japanese/i.test(v.lang+v.name))||vs.find(v=>/ja|JP|Japanese/i.test(v.lang+v.name)); if(jp)u.voice=jp; u.rate=0.95; speechSynthesis.cancel(); speechSynthesis.speak(u);} if('speechSynthesis'in window){speechSynthesis.onvoiceschanged=()=>{};}
+
+  window.addEventListener('keydown',e=>{
+    if((State.mode==='study'||State.mode==='train'||State.mode==='quiz')&&(e.key==='F5'||(e.ctrlKey&&e.key.toLowerCase()==='r'))){e.preventDefault();return;}
+    if(State.mode==='study'||State.mode==='train'){
+      if(!State.showAnswer){
+        if(e.key==='Enter'){checkAnswer();return;}
+        if(e.key==='Backspace'){State.input=State.input.slice(0,-1);return;}
+        if(e.key.length===1){State.input+=e.key;return;}
+      } else {
+        if(e.key==='1'){chooseDifficulty('dificil'); return;}
+        if(e.key==='2'){chooseDifficulty('medio');  return;}
+        if(e.key==='3'){chooseDifficulty('facil');  return;}
+      }
+    }
+    if(State.mode==='add'){
+      const f=State.focusField||'hiragana';
+      if(e.key==='Tab'){e.preventDefault(); State.focusField= f==='hiragana'?'romaji': f==='romaji'?'pt':'hiragana'; return;}
+      if(e.key==='Enter'){addCardFromForm();return;}
+      if(e.key==='Backspace'){State.addForm[f]=State.addForm[f].slice(0,-1);return;}
+      if(e.key.length===1){State.addForm[f]+=e.key;return;}
+    }
+    if(State.mode==='bulk'){ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='v'){ pasteFromClipboard(); } }
+  });
+
+  let mouse={x:0,y:0,down:false}; 
+  cvs.addEventListener('mousemove',e=>{const r=cvs.getBoundingClientRect(); mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top;}); 
+  cvs.addEventListener('mousedown',e=>{mouse.down=true; handleClick(mouse.x,mouse.y);}); 
+  window.addEventListener('mouseup',()=>{mouse.down=false;}); 
+  function hit(b,x,y){return x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h;} 
+  function handleClick(x,y){const u=layout(); const all=[...u.buttons,...u.clickZones]; for(const b of all){ if(hit(b,x,y)){ b.onClick&&b.onClick(); return; } } }
+
+  function normalizeBasic(s){
+    return (s||'')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/[\p{P}\p{S}]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  function parseAnswers(pt){return (pt||'').split(/[|;,]/).map(normalizeBasic).filter(Boolean);}  
+
+  function addCardFromForm(){
+    const f=State.addForm; 
+    if(!f.hiragana.trim()||!f.romaji.trim()||!f.pt.trim()){State.message='Preencha todos os campos';return;} 
+    const combo=`${f.hiragana.trim()}|${f.romaji.trim().toLowerCase()}`; 
+    const dup=deck.some(c=>`${(c.hiragana||'').trim()}|${(c.romaji||'').toLowerCase().trim()}`===combo); 
+    if(dup){State.message='Já existe um card com esse Hiragana+Romaji';return;} 
+    const id=String(Date.now()); 
+    const ptStore=f.pt.trim().toLowerCase().replace(/\s*([;|,])\s*/g,'|'); 
+    deck.push({id:id,hiragana:f.hiragana.trim(),romaji:f.romaji.trim().toLowerCase(),pt:ptStore,due:todayStr(),ef:2.5,ivl:0,reps:0,ok:0,err:0,cat:'none'}); 
+    saveDeck(); 
+    State.addForm={hiragana:'',romaji:'',pt:''}; 
+    State.focusField='hiragana'; 
+    State.message='Card adicionado! (Dica: sinônimos com ;)';
+  }
+
+  function checkAnswer(){
+    if(!currentCard)return; 
+    const ok=parseAnswers(currentCard.pt).includes(normalizeBasic(State.input)); 
+    State.showAnswer=true; 
+    State.message= ok?'✔ Correto! Escolha a dificuldade.':'✘ Quase! Veja as respostas e marque a dificuldade.';
+  }
+
+  function chooseDifficulty(level){
+    if(!currentCard) return;
+    currentCard.cat = level;
+    saveDeck();
+
+    if(State.mode==='study'){
+      const g = (level==='dificil')?0:(level==='medio')?1:2;
+      const ok = parseAnswers(currentCard.pt).includes(normalizeBasic(State.input));
+      if(ok) currentCard.ok=(currentCard.ok||0)+1; else currentCard.err=(currentCard.err||0)+1;
+      schedule(currentCard,g); 
+      saveDeck();
+      stats.studiedToday=(stats.studiedToday||0)+1; stats.lastStudy=todayStr(); if(!stats.streak)stats.streak=1; saveStats();
+      pickNext();
+    } else {
+      pickNextTrain();
+    }
+  }
+
+  function openBulk(){State.mode='bulk'; State.bulkText=''; State.message='Cole sua lista com Ctrl+V';}
+  function pasteFromClipboard(){pasteArea.value=''; pasteArea.focus(); setTimeout(()=>{State.bulkText=pasteArea.value; State.message='Texto colado!';},10);} 
+  function parseBulk(text){const out=[]; const lines=(text||'').split(/\r?\n/); for(let line of lines){line=line.trim(); if(!line)continue; const parts=line.split(/\t|\s*;\s*/).map(s=>s.trim()).filter(Boolean); if(parts.length<3)continue; const [hiragana,romaji,...rest]=parts; const trs=rest.join(';'); out.push({hiragana:hiragana,romaji:romaji,pt:trs});} return out;}
+  function addBulk(text){
+    const items=parseBulk(text); if(!items.length){State.message='Nada válido encontrado';return;} 
+    let added=0,skipped=0; 
+    const existing=new Set(deck.map(c=>`${(c.hiragana||'').trim()}|${(c.romaji||'').toLowerCase().trim()}`)); 
+    const seen=new Set(); 
+    for(const it of items){
+      const key=`${(it.hiragana||'').trim()}|${(it.romaji||'').toLowerCase().trim()}`; 
+      if(!it.hiragana||!it.romaji){skipped++;continue;} 
+      if(existing.has(key)||seen.has(key)){skipped++;continue;} 
+      const id=String(Date.now()+Math.floor(Math.random()*9999)); 
+      const ptStore=(it.pt||'').toLowerCase().replace(/\s*([;|,])\s*/g,'|'); 
+      deck.push({id:id,hiragana:it.hiragana.trim(),romaji:(it.romaji||'').toLowerCase().trim(),pt:ptStore,due:todayStr(),ef:2.5,ivl:0,reps:0,ok:0,err:0,cat:'none'}); 
+      existing.add(key); seen.add(key); added++; 
+    } 
+    saveDeck(); 
+    State.message=`Importados: ${added}. Ignorados (duplicados): ${skipped}.`;
+  }
+
+  function deleteSelected(){const id=State.manage.selected; if(!id){State.message='Selecione um item';return;} deck=deck.filter(c=>c.id!==id); saveDeck(); State.manage.selected=null; State.message='Card removido.';}
+  function sortDeck(items,key){const a=items.slice(); a.sort((x,y)=>{if(key==='due'){return (x.due||'')<(y.due||'')?-1:1;} if(key==='ok'){return (y.ok||0)-(x.ok||0);} if(key==='err'){return (y.err||0)-(x.err||0);} if(key==='cat'){return (x.cat||'').localeCompare(y.cat||'');} return x.hiragana.localeCompare(y.hiragana);}); return a;}
+
+  function layout(){
+    const W=cvs.clientWidth,H=cvs.clientHeight; 
+    const pad=Math.max(16,Math.floor(W*0.02)); 
+    const cardW=Math.min(880,W-pad*2); 
+    const cardH=Math.min(560,H-pad*3-64); 
+    const cx=(W-cardW)/2, cy=pad*2; 
+    const buttons=[],clickZones=[],inputs=[];
+
+    // Barra superior
+    const bar={x:pad,y:pad,w:W-pad*2,h:20}; 
+    const prog={x:bar.x,y:bar.y,w:Math.min(420,bar.w*0.55),h:16}; 
+    const streakBox={x:bar.x+prog.w+12,y:bar.y-2,w:220,h:22}; 
+
+    // Botões principais
+    const topBtnW=112, topBtnH=36; 
+    const rightBoxW=topBtnW*5+16*4; 
+    const rightBox={x:W-pad-rightBoxW,y:bar.y-10,w:rightBoxW,h:topBtnH}; 
+
+    const btnStudy={x:rightBox.x,y:rightBox.y,w:topBtnW,h:topBtnH,label:'Estudar',onClick:()=>{State.mode='study'; pickNext();}};
+    const btnTrain={x:rightBox.x+topBtnW+16,y:rightBox.y,w:topBtnW,h:topBtnH,label:'Treinar',fill:'#0ea5e9',onClick:()=>{State.mode='train'; pickNextTrain();}};
+    const btnQuiz ={x:rightBox.x+(topBtnW+16)*2,y:rightBox.y,w:topBtnW,h:topBtnH,label:'Quiz',fill:'#f59e0b',onClick:()=>{State.mode='quiz'; startQuizQuestion();}};
+    const btnSum  ={x:rightBox.x+(topBtnW+16)*3,y:rightBox.y,w:topBtnW,h:topBtnH,label:'Resumo',fill:'#8b5cf6',onClick:()=>{State.mode='summary';}};
+    const btnList ={x:rightBox.x+(topBtnW+16)*4,y:rightBox.y,w:topBtnW,h:topBtnH,label:'Lista',fill:'#334155',onClick:()=>{State.mode='manage';}};
+    buttons.push(btnStudy,btnTrain,btnQuiz,btnSum,btnList);
+
+    // Engrenagem (Adicionar)
+    const gear = { x: pad, y: H - pad - 40, w: 40, h: 40, onClick: ()=>{ State.mode='add'; State.focusField='hiragana'; } };
+    clickZones.push(gear);
+
+    const card={x:cx,y:cy,w:cardW,h:cardH};
+
+    // UI do Treino: filtro por dificuldade
+    let trainPills = [];
+    if(State.mode==='train'){
+      const defs=[{key:'todas',label:'Todas'},{key:'dificil',label:'Difícil'},{key:'medio',label:'Médio'},{key:'facil',label:'Fácil'}];
+      const pw=92, ph=30, gap=10;
+      let px=cx+24, py=cy+16;
+      for(const p of defs){
+        const pill={x:px,y:py,w:pw,h:ph,label:p.label,active: State.trainFilter===p.key};
+        trainPills.push(pill);
+        clickZones.push({x:pill.x,y:pill.y,w:pw,h:ph,onClick:()=>{State.trainFilter=p.key; pickNextTrain();}});
+        px+=pw+gap;
+      }
+    }
+
+    // STUDY & TRAIN
+    if(State.mode==='study'||State.mode==='train'){ 
+      const btnAudio={x:cx+cardW-56,y:cy+16,w:40,h:36,label:'\uD83D\uDD0A',fill:'#243b55',onClick:()=>{if(currentCard)speakJP(currentCard.hiragana);}}; 
+      buttons.push(btnAudio); 
+      if(!State.showAnswer){ const btnVer={x:cx+cardW-140,y:cy+cardH-56,w:120,h:44,label:'Verificar',onClick:checkAnswer}; buttons.push(btnVer);} 
+      else { const bx=cx+cardW-(120*3+12*2)-16, by=cy+cardH-56; const bHard={x:bx,y:by,w:120,h:44,label:'Difícil (1)',fill:C.danger,onClick:()=>chooseDifficulty('dificil')}; const bMed={x:bx+120+12,y:by,w:120,h:44,label:'Médio (2)',fill:C.warn,onClick:()=>chooseDifficulty('medio')}; const bEasy={x:bx+(120+12)*2,y:by,w:120,h:44,label:'Fácil (3)',fill:C.accent2,onClick:()=>chooseDifficulty('facil')}; buttons.push(bHard,bMed,bEasy); }
+    }
+
+    // ADD
+    if(State.mode==='add'){
+      const iw=Math.min(560,cardW-40); const ix=cx+(cardW-iw)/2; 
+      const i1={x:ix,y:cy+80,w:iw,h:64,label:'Hiragana',value:State.addForm.hiragana,placeholder:'ex.: こんにちは',focused:State.focusField==='hiragana'}; 
+      const i2={x:ix,y:cy+160,w:iw,h:64,label:'Romaji',value:State.addForm.romaji,placeholder:'ex.: konnichiwa',focused:State.focusField==='romaji'}; 
+      const i3={x:ix,y:cy+240,w:iw,h:64,label:'Tradução (PT-BR)',value:State.addForm.pt,placeholder:'ex.: olá; boa tarde',focused:State.focusField==='pt'}; 
+      inputs.push(i1,i2,i3); 
+      const bTab={x:ix,y:cy+320,w:120,h:42,label:'Tab ↹',fill:'#1f2937',onClick:()=>{State.focusField= State.focusField==='hiragana'?'romaji': State.focusField==='romaji'?'pt':'hiragana';}}; 
+      const bAdd={x:ix+iw-200,y:cy+320,w:200,h:42,label:'Adicionar (Enter)',onClick:addCardFromForm}; 
+      const bBulk={x:ix,y:cy+372,w:iw,h:44,label:'Colar lista (Importar em massa)',fill:'#334155',onClick:openBulk}; 
+      buttons.push(bTab,bAdd,bBulk); 
+      clickZones.push({x:i1.x,y:i1.y,w:i1.w,h:i1.h,onClick:()=>{State.focusField='hiragana'}});
+      clickZones.push({x:i2.x,y:i2.y,w:i2.w,h:i2.h,onClick:()=>{State.focusField='romaji'}});
+      clickZones.push({x:i3.x,y:i3.y,w:i3.w,h:i3.h,onClick:()=>{State.focusField='pt'}});
+    } 
+
+    // BULK
+    if(State.mode==='bulk'){
+      const bPaste={x:cx+24,y:cy+cardH-56,w:160,h:44,label:'Colar (Ctrl+V)',fill:'#1f2937',onClick:pasteFromClipboard}; 
+      const bAddAll={x:cx+24+160+12,y:cy+cardH-56,w:200,h:44,label:'Adicionar tudo',fill:'#16a34a',onClick:()=>addBulk(State.bulkText)}; 
+      const bBack={x:cx+cardW-120-24,y:cy+cardH-56,w:120,h:44,label:'Voltar',fill:'#374151',onClick:()=>{State.mode='add';}}; 
+      buttons.push(bPaste,bAddAll,bBack);
+    } 
+
+    // MANAGE (Lista)
+    if(State.mode==='manage'){
+      const listX=cx+16, listY=cy+56, listW=cardW-32, rowH=36; 
+      const header=['#','Hiragana','Romaji','Cat','Próx.','Ivl(d)','EF','✓','✗']; 
+      const cols=[40,180,160,80,100,70,60,40,40]; 
+      roundRect(cx+16,cy+16,listW,28,10); ctx.fillStyle='#0f1422'; ctx.fill(); ctx.strokeStyle=C.stroke; ctx.stroke(); 
+      ctx.fillStyle=C.sub; ctx.font='600 14px system-ui'; ctx.textBaseline='middle'; 
+      let xh=listX+12; 
+      for(let i=0;i<header.length;i++){ctx.textAlign=(i===1||i===2)?'left':'center'; ctx.fillText(header[i], (i===1||i===2)?xh:xh+cols[i]/2, cy+30); xh+=cols[i];} 
+      const items=sortDeck(deck,State.manage.sort); 
+      const start=State.manage.page*State.manage.pageSize; 
+      const end=Math.min(items.length,start+State.manage.pageSize); 
+      for(let r=start,row=0;r<end;r++,row++){
+        const it=items[r]; const y=listY+row*rowH; 
+        if(State.manage.selected===it.id){roundRect(listX,y,listW,rowH-4,10); ctx.fillStyle='rgba(67,182,255,0.12)'; ctx.fill();}
+        let x=listX+12; 
+        ctx.fillStyle=C.text; ctx.font='500 14px system-ui'; ctx.textBaseline='middle'; ctx.textAlign='center'; ctx.fillText(String(r+1), x+cols[0]/2-12, y+rowH/2); 
+        x+=cols[0]; ctx.textAlign='left';
+        // diminuir APENAS o Hiragana na tabela
+        const __prevFont = ctx.font;
+        ctx.font = `500 ${SIZES.hiraganaManagePx}px system-ui`;
+        ctx.fillText(it.hiragana, x, y+rowH/2);
+        ctx.font = __prevFont;
+
+        x+=cols[1]; ctx.textAlign='left'; ctx.fillStyle=C.sub; ctx.fillText(it.romaji, x, y+rowH/2); 
+        x+=cols[2]; ctx.textAlign='center'; ctx.fillStyle=C.text; ctx.fillText((it.cat||'none'), x+cols[3]/2-10, y+rowH/2);
+        x+=cols[3]; ctx.textAlign='center'; ctx.fillText(it.due||'', x+cols[4]/2-10, y+rowH/2); 
+        x+=cols[4]; ctx.fillText(String(it.ivl||0), x+cols[5]/2-10, y+rowH/2); 
+        x+=cols[5]; ctx.fillText((it.ef||2.5).toFixed(2), x+cols[6]/2-10, y+rowH/2); 
+        x+=cols[6]; ctx.fillStyle='#22c55e'; ctx.fillText(String(it.ok||0), x+cols[7]/2-10, y+rowH/2); 
+        x+=cols[7]; ctx.fillStyle='#ef4444'; ctx.fillText(String(it.err||0), x+cols[8]/2-10, y+rowH/2); 
+        clickZones.push({x:listX,y:y,w:listW,h:rowH-4,onClick:()=>{State.manage.selected=it.id;}});
+      }
+      const totalPages=Math.max(1,Math.ceil(deck.length/State.manage.pageSize)); 
+      const bPrev={x:cx+16,y:cy+cardH-56,w:112,h:40,label:'◀ Anterior',fill:'#1f2937',onClick:()=>{State.manage.page=Math.max(0,State.manage.page-1);}}; 
+      const bNext={x:cx+16+112+12,y:cy+cardH-56,w:112,h:40,label:'Próxima ▶',fill:'#1f2937',onClick:()=>{State.manage.page=Math.min(totalPages-1,State.manage.page+1);}}; 
+      const bDel={x:cx+cardW-160-16,y:cy+cardH-56,w:160,h:40,label:'Excluir selecionado',fill:'#dc2626',onClick:deleteSelected}; 
+      buttons.push(bPrev,bNext,bDel); 
+      ctx.fillStyle=C.sub; ctx.font='500 12px system-ui'; ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(`Página ${State.manage.page+1}/${totalPages} — clique numa linha para selecionar`, cx+16, cy+cardH-64);
+    } 
+
+    // QUIZ — define botões/zonas de clique
+    if (State.mode === 'quiz') {
+      const q = State.quiz;
+      if (q.current) {
+        const gridPad = 20;
+        const bw = (card.w - gridPad * 3) / 2;
+        const bh = 56;
+        const marginBottom = 24;
+        const gap = 12;
+        const baseline = card.y + card.h - marginBottom;
+        const nextBtnH = 44, volH = 36;
+        const nextBtnY = baseline - nextBtnH;
+        const volY = baseline - volH;
+        const optionsBottom = nextBtnY - gap;
+        let ox = card.x + gridPad,
+            oy = optionsBottom - (bh * 2 + gridPad);
+
+        for (let i = 0; i < 4; i++) {
+          const row = Math.floor(i / 2),
+                col = i % 2;
+          const bx = ox + col * (bw + gridPad),
+                by = oy + row * (bh + gridPad);
+          const isSel = q.selectedIndex === i;
+          const isCorrect = (q.correctIndex === i);
+          let fillVar = '#1f2937';
+          if (q.selectedIndex !== -1) {
+            if (isCorrect) fillVar = C.accent2;
+            else if (isSel) fillVar = C.danger;
+          }
+          buttons.push({ x: bx, y: by, w: bw, h: bh, label: q.options[i] || '—', fill: fillVar, onClick: () => selectQuizOption(i) });
+        }
+
+        buttons.push({ x: card.x + card.w - 140, y: nextBtnY, w: 120, h: nextBtnH, label: (q.selectedIndex === -1 ? 'Pular' : 'Próximo ▶'), fill: '#0ea5e9', onClick: nextQuiz });
+        buttons.push({ x: card.x + 20, y: volY, w: 40, h: volH, label: '🔊', fill: '#243b55', onClick: () => { speakJP(q.current.hiragana); } });
+      }
+    }
+
+    return {pad:pad, bar:bar, prog:prog, streakBox:streakBox, buttons:buttons, clickZones:clickZones, card:card, inputs:inputs, cx:cx, cy:cy, cardW:cardW, cardH:cardH, gear:gear, trainPills:trainPills};
+  }
+
+  function pillet(p){ return p; }
+
+  let _tick=0; function tick(){return _tick;}
+  function render(){
+    _tick++; 
+    const L=layout(); 
+    ctx.clearRect(0,0,cvs.clientWidth,cvs.clientHeight); 
+
+    // Header
+    ctx.fillStyle=C.text; ctx.font='700 18px system-ui'; ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText('Flashcards JP↔PT — Canvas', L.pad, 14); 
+    drawIconButton({x:L.gear.x,y:L.gear.y,w:L.gear.w || 40,h:L.gear.h || 36},'⚙');
+
+    const pct=Math.max(0,Math.min(1,(stats.studiedToday||0)/(stats.dailyGoal||20))); 
+    drawProgressBar(L.bar.x,L.bar.y+26,Math.min(420,L.bar.w*0.55),16,pct); 
+    roundRect(L.streakBox.x,L.streakBox.y,L.streakBox.w,L.streakBox.h,12); ctx.fillStyle='#0f1422'; ctx.fill(); ctx.strokeStyle=C.stroke; ctx.stroke(); ctx.fillStyle=C.sub; ctx.font='600 12px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(`Streak: ${stats.streak||0} dia(s)`, L.streakBox.x+L.streakBox.w/2, L.streakBox.y+L.streakBox.h/2); 
+    roundRect(L.card.x,L.card.y,L.card.w,L.card.h,20); ctx.fillStyle=C.card; ctx.fill(); ctx.strokeStyle=C.stroke; ctx.stroke(); 
+
+    if(State.mode==='menu'){
+      ctx.fillStyle=C.sub; ctx.font='500 16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('Clique em ESTUDAR, TREINAR, QUIZ ou ⚙ para ADICIONAR.', L.card.x+L.card.w/2, L.card.y+L.card.h/2);
+    }
+
+    if(State.mode==='study'||State.mode==='train'){ 
+      // pills do treino
+      if(State.mode==='train' && L.trainPills){ for(const p of L.trainPills) drawPill(p); }
+
+      if(!currentCard){
+        ctx.fillStyle=C.sub; ctx.font='500 16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; 
+        const msg = (State.mode==='study')?'Nenhum card devido agora. Use TREINAR/QUIZ ou volte depois.':(trainPool().length? 'Escolha "Verificar" após digitar sua resposta.':'Nenhum card nessa categoria. Troque o filtro.');
+        ctx.fillText(msg, L.card.x+L.card.w/2, L.card.y+L.card.h/2);
+      } else {
+        const startY = L.card.y + (State.mode==='train' ? 72 : 28);
+        // HIRAGANA (menor)
+        ctx.fillStyle=C.text;
+        ctx.font = `700 ${Math.max(SIZES.hiraganaStudyMin, Math.floor(L.card.h * SIZES.hiraganaStudyFactor))}px system-ui`;
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText(currentCard.hiragana, L.card.x+L.card.w/2, startY);
+
+        // Romaji
+        ctx.fillStyle=C.sub; ctx.font='600 22px system-ui';
+        const ry=startY+Math.max(SIZES.hiraganaStudyMin, Math.floor(L.card.h*SIZES.hiraganaStudyFactor))+8;
+        ctx.fillText(currentCard.romaji, L.card.x+L.card.w/2, ry);
+
+        let afterY=ry+36;
+        if(State.showAnswer){
+          const answers=parseAnswers(currentCard.pt); 
+          ctx.fillStyle=C.sub; ctx.font='600 14px system-ui'; ctx.fillText('Respostas aceitas:', L.card.x+L.card.w/2, afterY); 
+          ctx.fillStyle=C.text; ctx.font='800 20px system-ui'; ctx.fillText(answers.join(' / '), L.card.x+L.card.w/2, afterY+20); 
+          afterY+=56;
+        } 
+        const ansY=Math.min(L.card.y+L.card.h-120,afterY+16); 
+        ctx.fillStyle=C.sub; ctx.font='600 14px system-ui'; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillText('Tradução (PT-BR) — digite e pressione Enter:', L.card.x+24, ansY-36); 
+        const inp={x:L.card.x+24,y:ansY-24,w:L.card.w-48-150,h:48,label:'',value:State.input,placeholder:'ex.: olá; boa tarde',focused:true}; 
+        drawInput(inp);
+      }
+    }
+
+    if(State.mode==='add'){
+      ctx.fillStyle=C.text; ctx.font='700 20px system-ui'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('Adicionar novo card', L.card.x+L.card.w/2, L.card.y+24); 
+      for(const i of L.inputs) drawInput(i); 
+      ctx.fillStyle=C.sub; ctx.font='500 13px system-ui'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('Dica: separe sinônimos com ;  (ex.: olá; boa tarde)', L.card.x+L.card.w/2, L.card.y+L.card.h-96);
+    } 
+
+    if(State.mode==='bulk'){
+      ctx.fillStyle=C.text; ctx.font='700 20px system-ui'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('Importar em massa (colar lista)', L.card.x+L.card.w/2, L.card.y+24); 
+      ctx.fillStyle=C.sub; ctx.font='500 14px system-ui'; ctx.textAlign='left'; ctx.textBaseline='top'; 
+      const guide=['Formato por linha: hiragana ; romaji ; tradução1 ; tradução2 ...','Ex.: こんにちは ; konnichiwa ; olá ; boa tarde','Você pode usar TAB no lugar de ponto e vírgula.','Atalho: Ctrl+V para colar. Depois clique em "Adicionar tudo".']; 
+      let gy=L.card.y+64; for(const g of guide){ctx.fillText('• '+g, L.card.x+24, gy); gy+=22;} 
+      const boxX=L.card.x+24, boxY=gy+8, boxW=L.card.w-48, boxH=Math.max(120,L.card.h-(boxY-L.card.y)-88); 
+      roundRect(boxX,boxY,boxW,boxH,12); ctx.fillStyle='#0f1422'; ctx.fill(); ctx.strokeStyle=C.stroke; ctx.stroke(); 
+      ctx.fillStyle=State.bulkText?C.text:'rgba(231,238,247,0.4)'; ctx.font='500 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'; ctx.textAlign='left'; ctx.textBaseline='top'; 
+      const text=State.bulkText||'Cole aqui com Ctrl+V...'; drawMultiline(text, boxX+12, boxY+12, boxW-24, 18);
+    } 
+
+    if(State.mode==='summary'){
+      ctx.fillStyle=C.text; ctx.font='700 20px system-ui'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('Resumo do dia', L.card.x+L.card.w/2, L.card.y+24); 
+      ctx.textAlign='left'; ctx.font='600 16px system-ui'; ctx.fillStyle=C.sub; 
+      const Ls=[`Cards estudados hoje: ${stats.studiedToday||0}`,`Meta diária: ${stats.dailyGoal||20}`,`Streak atual: ${stats.streak||0} dia(s)`,`Cards no deck: ${deck.length}`,`Cards devidos agora: ${dueCards().length}`]; 
+      let yy=L.card.y+80; for(const t of Ls){ctx.fillText(t,L.card.x+24,yy); yy+=28;}
+    } 
+
+    // Render do QUIZ (textos)
+    if(State.mode==='quiz'){
+      const q=State.quiz;
+      ctx.fillStyle=C.text; ctx.font='700 22px system-ui'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('Quiz — escolha a tradução correta', L.card.x+L.card.w/2, L.card.y+20);
+      if(!q.current){
+        ctx.fillStyle=C.sub; ctx.font='500 16px system-ui'; ctx.fillText('Sem cartas suficientes. Adicione ⚙ algumas e volte ao Quiz.', L.card.x+L.card.w/2, L.card.y+L.card.h/2);
+      } else {
+        // Romaji em cima
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const romajiSize = Math.max(32, Math.floor(L.card.h * 0.18));
+        const romajiY = L.card.y + 70;
+        ctx.fillStyle = C.text;
+        ctx.font = `800 ${romajiSize}px system-ui`;
+        ctx.fillText(q.current.romaji, L.card.x + L.card.w/2, romajiY);
+        const m = ctx.measureText(q.current.romaji);
+        const romajiH = (m.actualBoundingBoxAscent || romajiSize * 0.8) + (m.actualBoundingBoxDescent || romajiSize * 0.2);
+        const hiraganaY = romajiY + romajiH + 8 + SIZES.hiraganaQuizOffset;
+        // Hiragana menor
+        ctx.fillStyle = C.sub;
+        ctx.font = `600 ${SIZES.hiraganaQuizPx}px system-ui`;
+        ctx.fillText(q.current.hiragana, L.card.x + L.card.w/2, hiraganaY);
+      }
+    }
+
+    if(State.message){
+      ctx.fillStyle='rgba(0,0,0,0.5)'; 
+      const mw=Math.min(640,cvs.clientWidth-40); 
+      const mx=(cvs.clientWidth-mw)/2, my=cvs.clientHeight-64; 
+      roundRect(mx,my,mw,40,12); ctx.fill(); ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.stroke(); 
+      ctx.fillStyle=C.text; ctx.font='600 14px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(State.message, mx+mw/2, my+20);
+    } 
+
+    const L2=layout(); for(const b of L2.buttons) drawButton(b); 
+    requestAnimationFrame(render);
+  }
+  render();
+
+  function drawMultiline(text,x,y,maxW,lineH){const lines=text.split(/\r?\n/); let yy=y; for(const ln of lines){wrapAndDraw(ln,x,yy,maxW,lineH); yy+=lineH*Math.max(1,Math.ceil(ctx.measureText(ln).width/maxW));}}
+  function wrapAndDraw(text,x,y,maxW,lineH){const words=text.split(/\s+/); let line='', yy=y; for(const w of words){const test=line?line+' '+w:w; if(ctx.measureText(test).width>maxW){ctx.fillText(line,x,yy); yy+=lineH; line=w;} else {line=test;}} if(line) ctx.fillText(line,x,yy);}  
+
+  function shuffleInPlace(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  (function tests(){
+    console.assert(parseAnswers('olá; boa tarde').length===2,'parse ;'); 
+    console.assert(parseAnswers('a, b|c').length===3,'parse mix'); 
+    console.assert(normalizeBasic('Licença')===normalizeBasic('licenca'),'acentos'); 
+    const tmp = migrate([{hiragana:'a',romaji:'b',pt:'c'}])[0]; 
+    console.assert(tmp.cat==='none','default cat');
+
+    const Ltest = layout();
+    console.assert(Ltest && Ltest.card && typeof Ltest.card.x==='number','layout básico');
+    console.assert(Ltest.gear && typeof Ltest.gear.x==='number','gear presente');
+
+    startQuizQuestion();
+    State.mode='quiz';
+    const Lq = layout();
+    console.assert(Array.isArray(State.quiz.options) && State.quiz.options.length===4, 'quiz 4 opções');
+    const labels = new Set(Lq.buttons.map(b=>b.label));
+    console.assert(State.quiz.options.every(o=>labels.has(o)), 'layout inclui os 4 botões do quiz');
+    console.assert(Lq.buttons.some(b=>b.label==='Pular' || b.label==='Próximo ▶'), 'layout inclui Próximo/Pular');
+
+    const arr=[1,2,3,4,5]; const copy=arr.slice(); shuffleInPlace(copy);
+    console.assert(copy.length===arr.length && arr.every(v=>copy.includes(v)), 'shuffle preserva elementos');
+
+    console.log('%c[Canvas Flashcards v4.6] Tests OK','color:#7cffad');
+  })();
+  </script>
 </body>
 </html>
