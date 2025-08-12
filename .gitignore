@@ -1,0 +1,66 @@
+# ───── SISTEMA / EDITORES ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml
+*.code-workspace
+
+# ───── DEPENDÊNCIAS JS ─────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ───── SAÍDAS DE BUILD (WEB) ───────────────────────────────────────────────────
+dist/
+build/
+out/
+tmp/
+temp/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+coverage/
+
+# ───── VARIÁVEIS DE AMBIENTE ───────────────────────────────────────────────────
+.env
+.env.*.local
+.env.local
+
+# ───── CORDOVA / CAPACITOR ─────────────────────────────────────────────────────
+platforms/
+plugins/
+www/               # gerada em builds do Cordova
+.cordova/
+
+# Capacitor / Android
+android/app/build/
+android/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+
+# Capacitor / iOS
+ios/build/
+ios/Pods/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/*.xcworkspace/xcuserdata/
+
+# ───── REACT NATIVE (se migrar) ────────────────────────────────────────────────
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/build/
+android/build/
+ios/build/
+ios/Pods/
+
+# ───── FASTLANE (se usar) ──────────────────────────────────────────────────────
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
