@@ -439,18 +439,19 @@
         const msg = (State.mode==='study')?'Nenhum card devido agora. Use TREINAR/QUIZ ou volte depois.':(trainPool().length? 'Escolha "Verificar" após digitar sua resposta.':'Nenhum card nessa categoria. Troque o filtro.');
         ctx.fillText(msg, L.card.x+L.card.w/2, L.card.y+L.card.h/2);
       } else {
+        const startY = L.card.y + (State.mode==='train' ? 72 : 28);
         // HIRAGANA (menor)
-        ctx.fillStyle=C.text; 
+        ctx.fillStyle=C.text;
         ctx.font = `700 ${Math.max(SIZES.hiraganaStudyMin, Math.floor(L.card.h * SIZES.hiraganaStudyFactor))}px system-ui`;
-        ctx.textAlign='center'; ctx.textBaseline='top'; 
-        ctx.fillText(currentCard.hiragana, L.card.x+L.card.w/2, L.card.y+28); 
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText(currentCard.hiragana, L.card.x+L.card.w/2, startY);
 
         // Romaji
-        ctx.fillStyle=C.sub; ctx.font='600 22px system-ui'; 
-        const ry=L.card.y+28+Math.max(SIZES.hiraganaStudyMin, Math.floor(L.card.h*SIZES.hiraganaStudyFactor))+8; 
-        ctx.fillText(currentCard.romaji, L.card.x+L.card.w/2, ry); 
+        ctx.fillStyle=C.sub; ctx.font='600 22px system-ui';
+        const ry=startY+Math.max(SIZES.hiraganaStudyMin, Math.floor(L.card.h*SIZES.hiraganaStudyFactor))+8;
+        ctx.fillText(currentCard.romaji, L.card.x+L.card.w/2, ry);
 
-        let afterY=ry+36; 
+        let afterY=ry+36;
         if(State.showAnswer){
           const answers=parseAnswers(currentCard.pt); 
           ctx.fillStyle=C.sub; ctx.font='600 14px system-ui'; ctx.fillText('Respostas aceitas:', L.card.x+L.card.w/2, afterY); 
