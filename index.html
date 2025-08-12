@@ -383,8 +383,15 @@
         const gridPad = 20;
         const bw = (card.w - gridPad * 3) / 2;
         const bh = 56;
+        const marginBottom = 24;
+        const gap = 12;
+        const baseline = card.y + card.h - marginBottom;
+        const nextBtnH = 44, volH = 36;
+        const nextBtnY = baseline - nextBtnH;
+        const volY = baseline - volH;
+        const optionsBottom = nextBtnY - gap;
         let ox = card.x + gridPad,
-            oy = card.y + card.h - (bh * 2 + gridPad * 3);
+            oy = optionsBottom - (bh * 2 + gridPad);
 
         for (let i = 0; i < 4; i++) {
           const row = Math.floor(i / 2),
@@ -401,8 +408,8 @@
           buttons.push({ x: bx, y: by, w: bw, h: bh, label: q.options[i] || '—', fill: fillVar, onClick: () => selectQuizOption(i) });
         }
 
-        buttons.push({ x: card.x + card.w - 140, y: card.y + card.h - 56, w: 120, h: 44, label: (q.selectedIndex === -1 ? 'Pular' : 'Próximo ▶'), fill: '#0ea5e9', onClick: nextQuiz });
-        buttons.push({ x: card.x + 20, y: card.y + card.h - 56, w: 40, h: 36, label: '🔊', fill: '#243b55', onClick: () => { speakJP(q.current.hiragana); } });
+        buttons.push({ x: card.x + card.w - 140, y: nextBtnY, w: 120, h: nextBtnH, label: (q.selectedIndex === -1 ? 'Pular' : 'Próximo ▶'), fill: '#0ea5e9', onClick: nextQuiz });
+        buttons.push({ x: card.x + 20, y: volY, w: 40, h: volH, label: '🔊', fill: '#243b55', onClick: () => { speakJP(q.current.hiragana); } });
       }
     }
 
