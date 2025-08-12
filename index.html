@@ -267,11 +267,9 @@
     const buttons=[],clickZones=[],inputs=[];
 
     // Barra superior
-    const bar={x:pad,y:pad,w:W-pad*2,h:20};
-    const progW=Math.min(420,bar.w*0.55);
-    const prog={x:(W-progW)/2,y:bar.y+26,w:progW,h:8};
-    const streakW=160;
-    const streakBox={x:prog.x+(prog.w-streakW)/2,y:prog.y+prog.h+10,w:streakW,h:20};
+    const bar={x:pad,y:pad,w:W-pad*2,h:20}; 
+    const prog={x:bar.x,y:bar.y,w:Math.min(420,bar.w*0.55),h:16}; 
+    const streakBox={x:bar.x+prog.w+12,y:bar.y-2,w:220,h:22}; 
 
     // Botões principais
     const topBtnW=112, topBtnH=36; 
@@ -423,8 +421,8 @@
     ctx.fillStyle=C.text; ctx.font='700 18px system-ui'; ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText('Flashcards JP↔PT — Canvas', L.pad, 14); 
     drawIconButton({x:L.gear.x,y:L.gear.y,w:L.gear.w || 40,h:L.gear.h || 36},'⚙');
 
-    const pct=Math.max(0,Math.min(1,(stats.studiedToday||0)/(stats.dailyGoal||20)));
-    drawProgressBar(L.prog.x,L.prog.y,L.prog.w,L.prog.h,pct);
+    const pct=Math.max(0,Math.min(1,(stats.studiedToday||0)/(stats.dailyGoal||20))); 
+    drawProgressBar(L.bar.x,L.bar.y+26,Math.min(420,L.bar.w*0.55),16,pct); 
     roundRect(L.streakBox.x,L.streakBox.y,L.streakBox.w,L.streakBox.h,12); ctx.fillStyle='#0f1422'; ctx.fill(); ctx.strokeStyle=C.stroke; ctx.stroke(); ctx.fillStyle=C.sub; ctx.font='600 12px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(`Streak: ${stats.streak||0} dia(s)`, L.streakBox.x+L.streakBox.w/2, L.streakBox.y+L.streakBox.h/2); 
     roundRect(L.card.x,L.card.y,L.card.w,L.card.h,20); ctx.fillStyle=C.card; ctx.fill(); ctx.strokeStyle=C.stroke; ctx.stroke(); 
 
