@@ -8,17 +8,18 @@
 </head>
 <body>
   <canvas id="app"></canvas>
-
-  <!-- INPUT INVISÍVEL para abrir teclado no mobile -->
-  <input id="mobileInput"
-         type="text"
-         inputmode="text"
-         enterkeyhint="go"
-         autocomplete="off"
-         autocapitalize="off"
-         autocorrect="off"
-         spellcheck="false"
-         style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0.02; background:transparent; color:transparent; caret-color:#7ee7f3; border:0; outline:0; z-index:10; pointer-events:auto;" />
+  <div id="ui-layer">
+    <!-- INPUT INVISÍVEL para abrir teclado no mobile -->
+    <input id="mobileInput"
+           class="mobile-input"
+           type="text"
+           inputmode="text"
+           enterkeyhint="go"
+           autocomplete="off"
+           autocapitalize="off"
+           autocorrect="off"
+           spellcheck="false" />
+  </div>
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>
