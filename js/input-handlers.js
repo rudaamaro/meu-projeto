@@ -64,16 +64,24 @@ export function handleClick(x, y) {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
-    cvs.addEventListener('touchstart', (e) => {
+    // Pega o canvas de forma segura; se cvs ainda não foi setado, busca por id.
+    const can = (typeof cvs !== 'undefined' && cvs) || document.getElementById('app');
+    if (!can) return; // evita erro se o canvas ainda não estiver no DOM
+
+    const onTouchStart = (e) => {
       if (!IS_MOBILE) return;
+
       const t = e.changedTouches[0];
-      const r = cvs.getBoundingClientRect();
-      const x = t.clientX - r.left, y = t.clientY - r.top;
+      const r = can.getBoundingClientRect();
+      const x = t.clientX - r.left;
+      const y = t.clientY - r.top;
+
+      // Campo de resposta (study/train)
       if (State.lastInputRect) {
-        const { x:ix, y:iy, w:iw, h:ih } = State.lastInputRect;
-        const inside = x>=ix && x<=ix+iw && y>=iy && y<=iy+ih;
+        const { x: ix, y: iy, w: iw, h: ih } = State.lastInputRect;
+        const inside = x >= ix && x <= ix + iw && y >= iy && y <= iy + ih;
         if (inside && mobileInput) {
-          e.preventDefault();
+          e.preventDefault(); // evita zoom/seleção no iOS
           mobileInput.focus();
           const v = mobileInput.value || '';
           mobileInput.setSelectionRange(v.length, v.length);
@@ -81,16 +89,20 @@ if (typeof window !== 'undefined') {
           return;
         }
       }
-      if (State.mode==='bulk' && State.lastBulkRect) {
-        const { x:bx, y:by, w:bw, h:bh } = State.lastBulkRect;
-        const insideB = x>=bx && x<=bx+bw && y>=by && y<=by+bh;
-        if (insideB && bulkTextarea) {
+
+      // Caixa de "colar lista" (modo bulk)
+      if (State.mode === 'bulk' && State.lastBulkRect) {
+        const { x: bx, y: by, w: bw, h: bh } = State.lastBulkRect;
+        const insideB = x >= bx && x <= bx + bw && y >= by && y <= by + bh;
+        if (insideB && typeof bulkTextarea !== 'undefined' && bulkTextarea) {
           e.preventDefault();
           bulkTextarea.focus();
           const v = bulkTextarea.value || '';
           bulkTextarea.setSelectionRange(v.length, v.length);
         }
       }
-    }, { passive:false });
+    };
+
+    can.addEventListener('touchstart', onTouchStart, { passive: false });
   });
 }
