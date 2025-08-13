@@ -1,14 +1,13 @@
 import {ctx,cvs} from './main.js';
 import {C,SIZES} from './constants.js';
 import {
-  roundRect,
-  drawButton,
+  roundRect,         
   drawIconButton,
+  drawButton,
   drawPill,
   drawInput,
   drawProgressBar,
-  drawMultiline,
-  wrapAndDraw
+  drawMultiline
 } from './canvas-helpers.js';
 import {State,currentCard,stats,deck,dueCards,trainPool} from './state.js';
 import {layout} from './layout.js';
