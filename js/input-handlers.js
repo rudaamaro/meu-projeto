@@ -64,14 +64,19 @@ export function handleClick(x, y) {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
-    cvs.addEventListener('touchstart', (e) => {
+    // pega o canvas de forma segura
+    const can = (typeof cvs !== 'undefined' && cvs) || document.getElementById('app');
+    if (!can) return; // evita erro se ainda não existir
+
+    const onTouchStart = (e) => {
       if (!IS_MOBILE) return;
       const t = e.changedTouches[0];
-      const r = cvs.getBoundingClientRect();
+      const r = can.getBoundingClientRect();
       const x = t.clientX - r.left, y = t.clientY - r.top;
+
       if (State.lastInputRect) {
-        const { x:ix, y:iy, w:iw, h:ih } = State.lastInputRect;
-        const inside = x>=ix && x<=ix+iw && y>=iy && y<=iy+ih;
+        const { x: ix, y: iy, w: iw, h: ih } = State.lastInputRect;
+        const inside = x >= ix && x <= ix + iw && y >= iy && y <= iy + ih;
         if (inside && mobileInput) {
           e.preventDefault();
           mobileInput.focus();
@@ -81,9 +86,10 @@ if (typeof window !== 'undefined') {
           return;
         }
       }
-      if (State.mode==='bulk' && State.lastBulkRect) {
-        const { x:bx, y:by, w:bw, h:bh } = State.lastBulkRect;
-        const insideB = x>=bx && x<=bx+bw && y>=by && y<=by+bh;
+
+      if (State.mode === 'bulk' && State.lastBulkRect) {
+        const { x: bx, y: by, w: bw, h: bh } = State.lastBulkRect;
+        const insideB = x >= bx && x <= bx + bw && y >= by && y <= by + bh;
         if (insideB && bulkTextarea) {
           e.preventDefault();
           bulkTextarea.focus();
@@ -91,7 +97,9 @@ if (typeof window !== 'undefined') {
           bulkTextarea.setSelectionRange(v.length, v.length);
         }
       }
-    }, { passive:false });
+    };
+
+    can.addEventListener('touchstart', onTouchStart, { passive: false });
   });
 }
 
