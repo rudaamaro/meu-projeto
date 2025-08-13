@@ -2,6 +2,7 @@ import {loadDeck,saveDeck,loadStats,saveStats} from './storage.js';
 import {parseAnswers,normalizeBasic} from './utils.js';
 import {todayStr,applyRollover} from './date-utils.js';
 import {schedule} from './srs.js';
+import { IS_MOBILE } from './device.js';
 
 export let deck=loadDeck(); export let stats=loadStats();
 applyRollover(stats,saveStats);
@@ -19,7 +20,7 @@ export const State={
     quiz:{current:null, options:[], correctIndex:-1, selectedIndex:-1},
     lastInputRect:null,
     lastBulkRect:null,
-    menuOpen:false
+    showMenu:false
   };
 
 export let currentCard=null;
@@ -80,7 +81,11 @@ export function chooseDifficulty(level){
   }
 }
 
-export function openBulk(){State.mode='bulk'; State.bulkText=''; State.message='Cole sua lista com Ctrl+V';}
+export function openBulk(){
+  State.mode='bulk';
+  State.bulkText='';
+  State.message = IS_MOBILE ? 'No iOS/Android, cole via atalho do teclado (colar) após focar o campo' : 'Cole sua lista com Ctrl+V';
+}
 export function pasteFromClipboard(){
   if(!pasteArea) return;
   pasteArea.value='';

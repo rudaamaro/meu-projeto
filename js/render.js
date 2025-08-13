@@ -1,4 +1,5 @@
-import { ctx, cvs, syncMobileInput, IS_MOBILE, showBulkTextareaOver, hideBulkTextarea } from './main.js';
+import { ctx, cvs, syncMobileInput, showBulkTextareaOver, hideBulkTextarea } from './main.js';
+import { IS_MOBILE } from './device.js';
 import { C, SIZES } from './constants.js';
 import {
   roundRect,
@@ -32,11 +33,11 @@ export function render() {
 
   // Header
   ctx.fillStyle = C.text; ctx.font = '700 18px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  ctx.fillText('Flashcards JP↔PT — Canvas', L.pad, 14);
-  drawIconButton({ x: L.gear.x, y: L.gear.y, w: L.gear.w || 40, h: L.gear.h || 36 }, '⚙');
+  ctx.fillText('Flashcards JP↔PT — Canvas', L.pad, L.bar.y - 12);
+  if (L.gear) drawIconButton({ x: L.gear.x, y: L.gear.y, w: L.gear.w || 40, h: L.gear.h || 36 }, '☰');
 
   const pct = Math.max(0, Math.min(1, (stats.studiedToday || 0) / (stats.dailyGoal || 20)));
-  drawProgressBar(L.bar.x, L.bar.y + 26, Math.min(420, L.bar.w * 0.55), 16, pct);
+  drawProgressBar(L.bar.x, L.bar.y, Math.min(420, L.bar.w * 0.55), 16, pct);
 
   roundRect(L.streakBox.x, L.streakBox.y, L.streakBox.w, L.streakBox.h, 12);
   ctx.fillStyle = '#0f1422'; ctx.fill(); ctx.strokeStyle = C.stroke; ctx.stroke();
@@ -63,13 +64,7 @@ export function render() {
         const startY = L.card.y + (State.mode === 'train' ? 72 : 28) + (IS_MOBILE ? 16 : 0);
         ctx.fillStyle = C.text;
         const base = Math.min(L.card.w, L.card.h);
-        const maxHira = Math.floor(L.card.h * 0.10);
-        const hiraPx0 = clamp(
-          SIZES.hiraganaStudyMin,
-          Math.floor(L.card.h * SIZES.hiraganaStudyFactor),
-          Math.floor(base * 0.22)
-        );
-        const hiraPx = Math.min(hiraPx0, maxHira);
+        const hiraPx = Math.max(SIZES.hiraganaStudyMin, Math.floor(L.card.h * SIZES.hiraganaStudyFactor));
         ctx.font = `700 ${hiraPx}px system-ui`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'top';
         ctx.fillText(currentCard.hiragana, L.card.x + L.card.w / 2, startY);
@@ -78,14 +73,14 @@ export function render() {
 
         const ry = startY + hiraH + 8;
         const maxRomaji = Math.floor(base * 0.22);
-        let romajiPx = Math.min(clamp(14, Math.floor(base * 0.12), Math.floor(base * 0.16)), maxRomaji);
+        let romajiPx = Math.min(Math.max(14, Math.floor(base * 0.12)), maxRomaji);
         romajiPx = fitTextToWidth(currentCard.romaji, L.card.w * 0.9, romajiPx, '600');
         ctx.fillStyle = C.sub; ctx.font = `600 ${romajiPx}px system-ui`;
         ctx.fillText(currentCard.romaji, L.card.x + L.card.w / 2, ry);
         const mRoma = ctx.measureText(currentCard.romaji);
         const romajiH = (mRoma.actualBoundingBoxAscent || romajiPx * 0.8) + (mRoma.actualBoundingBoxDescent || romajiPx * 0.2);
 
-        let afterY = ry + romajiH + 14;
+        let afterY = ry + romajiH + 20;
       if (State.showAnswer) {
         const answers = parseAnswers(currentCard.pt);
         ctx.fillStyle = C.sub; ctx.font = '600 14px system-ui'; ctx.fillText('Respostas aceitas:', L.card.x + L.card.w / 2, afterY);
@@ -173,14 +168,18 @@ export function render() {
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
         const base = Math.min(L.card.w, L.card.h);
-        const maxRomaji = Math.floor(base * 0.22);
-        let romajiSize = Math.min(clamp(28, Math.floor(L.card.h * 0.18), Math.floor(base * 0.22)), maxRomaji);
-        romajiSize = fitTextToWidth(q.current.romaji, L.card.w * 0.9, romajiSize);
-        const romajiY = L.card.y + 70;
+        let romajiMax = Math.floor(base * 0.22);
+        let romajiSize = Math.min(Math.max(28, Math.floor(L.card.h * 0.18)), romajiMax);
         ctx.fillStyle = C.text; ctx.font = `800 ${romajiSize}px system-ui`;
-      ctx.fillText(q.current.romaji, L.card.x + L.card.w / 2, romajiY);
-      const m = ctx.measureText(q.current.romaji);
-      const romajiH = (m.actualBoundingBoxAscent || romajiSize * 0.8) + (m.actualBoundingBoxDescent || romajiSize * 0.2);
+        if (ctx.measureText(q.current.romaji).width > L.card.w * 0.9) {
+          romajiMax = Math.floor(romajiMax * 0.95);
+          romajiSize = Math.min(romajiSize, romajiMax);
+          ctx.font = `800 ${romajiSize}px system-ui`;
+        }
+        const romajiY = L.card.y + 70;
+        ctx.fillText(q.current.romaji, L.card.x + L.card.w / 2, romajiY);
+        const m = ctx.measureText(q.current.romaji);
+        const romajiH = (m.actualBoundingBoxAscent || romajiSize * 0.8) + (m.actualBoundingBoxDescent || romajiSize * 0.2);
         const hiraganaY = romajiY + romajiH + 8 + SIZES.hiraganaQuizOffset;
         ctx.fillStyle = C.sub; ctx.font = `600 ${SIZES.hiraganaQuizPx}px system-ui`;
         ctx.fillText(q.current.hiragana, L.card.x + L.card.w / 2, hiraganaY);
@@ -196,14 +195,15 @@ export function render() {
     ctx.fillText(State.message, mx + mw / 2, my + 20);
   }
 
-  const L2 = layout();
-  if (L2.menuOverlay) {
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  if (State.showMenu && L.menuOverlay) {
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.fillRect(0, 0, cvs.clientWidth, cvs.clientHeight);
-    roundRect(L2.menuOverlay.x, L2.menuOverlay.y, L2.menuOverlay.w, L2.menuOverlay.h, 12);
+    roundRect(L.menuOverlay.x, L.menuOverlay.y, L.menuOverlay.w, L.menuOverlay.h, 12);
     ctx.fillStyle = '#0f1422'; ctx.fill(); ctx.strokeStyle = C.stroke; ctx.stroke();
+    for (const b of L.buttons) drawButton(b);
+  } else {
+    for (const b of L.buttons) drawButton(b);
   }
-  for (const b of L2.buttons) drawButton(b);
 
   requestAnimationFrame(render);
 }
