@@ -7,7 +7,6 @@ import './srs.js';
 import './state.js';
 import './quiz.js';
 import './speech.js';
-import './canvas-helpers.js';
 import './layout.js';
 import { render } from './render.js';
 import { keydownHandler, mousemoveHandler, mousedownHandler, mouseupHandler } from './input-handlers.js';
