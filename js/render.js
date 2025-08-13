@@ -13,6 +13,8 @@ import { State, currentCard, stats, deck, dueCards, trainPool } from './state.js
 import { layout } from './layout.js';
 import { parseAnswers, tick, incTick } from './utils.js';
 
+const clamp = (min, v, max) => Math.max(min, Math.min(v, max));
+
 export function render() {
   incTick();
   const L = layout();
@@ -48,23 +50,24 @@ export function render() {
         : (trainPool().length ? 'Escolha "Verificar" após digitar sua resposta.' : 'Nenhum card nessa categoria. Troque o filtro.');
       ctx.fillText(msg, L.card.x + L.card.w / 2, L.card.y + L.card.h / 2);
     } else {
-      const startY = L.card.y + (State.mode === 'train' ? 72 : 28);
-      ctx.fillStyle = C.text;
-      const base = Math.min(L.card.w, L.card.h);
-      const hiraSize = Math.min(
-        Math.max(SIZES.hiraganaStudyMin, Math.floor(L.card.h * SIZES.hiraganaStudyFactor)),
-        IS_MOBILE ? Math.floor(base * 0.3) : Infinity
-      );
-      ctx.font = `700 ${hiraSize}px system-ui`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText(currentCard.hiragana, L.card.x + L.card.w / 2, startY);
+        const startY = L.card.y + (State.mode === 'train' ? 72 : 28);
+        ctx.fillStyle = C.text;
+        const base = Math.min(L.card.w, L.card.h);
+        const hiraPx = clamp(
+          SIZES.hiraganaStudyMin,
+          Math.floor(L.card.h * SIZES.hiraganaStudyFactor),
+          Math.floor(base * 0.22)
+        );
+        ctx.font = `700 ${hiraPx}px system-ui`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(currentCard.hiragana, L.card.x + L.card.w / 2, startY);
 
-      const ry = startY + hiraSize + 8;
-      const romajiSize = Math.min(22, IS_MOBILE ? Math.floor(base * 0.12) : 22);
-      ctx.fillStyle = C.sub; ctx.font = `600 ${romajiSize}px system-ui`;
-      ctx.fillText(currentCard.romaji, L.card.x + L.card.w / 2, ry);
+        const ry = startY + hiraPx + 8;
+        const romajiSize = clamp(14, Math.floor(base * 0.12), Math.floor(base * 0.16));
+        ctx.fillStyle = C.sub; ctx.font = `600 ${romajiSize}px system-ui`;
+        ctx.fillText(currentCard.romaji, L.card.x + L.card.w / 2, ry);
 
-      let afterY = ry + romajiSize + 14;
+        let afterY = ry + romajiSize + 14;
       if (State.showAnswer) {
         const answers = parseAnswers(currentCard.pt);
         ctx.fillStyle = C.sub; ctx.font = '600 14px system-ui'; ctx.fillText('Respostas aceitas:', L.card.x + L.card.w / 2, afterY);
@@ -72,13 +75,13 @@ export function render() {
         afterY += 56;
       }
 
-      const ansY = Math.min(L.card.y + L.card.h - 120, afterY + 16);
-      ctx.fillStyle = C.sub; ctx.font = '600 14px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.fillText('Tradução (PT-BR) — digite e pressione Enter:', L.card.x + 24, ansY - 36);
-      const inp = { x: L.card.x + 24, y: ansY - 24, w: L.card.w - 48 - 150, h: 48, label: '', value: State.input, placeholder: 'ex.: olá; boa tarde', focused: true };
-      drawInput(inp);
-      State.lastInputRect = { x: inp.x, y: inp.y, w: inp.w, h: inp.h };
-      syncMobileInput(State.lastInputRect);
+        const ansY = Math.min(L.card.y + L.card.h - 120, afterY + 16);
+        ctx.fillStyle = C.sub; ctx.font = '600 14px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.fillText('Tradução (PT-BR) — digite e pressione Enter:', L.card.x + 24, ansY - 36);
+        const inp = { x: L.card.x + 24, y: ansY - 24, w: L.card.w - 48 - 150, h: 48, label: '', value: State.input, placeholder: 'ex.: olá; boa tarde', focused: true };
+        drawInput(inp);
+        State.lastInputRect = { ...inp };
+        syncMobileInput(State.lastInputRect);
     }
   } else {
     State.lastInputRect = null;
@@ -133,19 +136,16 @@ export function render() {
       ctx.fillText('Sem cartas suficientes. Adicione ⚙ algumas e volte ao Quiz.', L.card.x + L.card.w / 2, L.card.y + L.card.h / 2);
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      const base = Math.min(L.card.w, L.card.h);
-      const romajiSize = Math.min(
-        Math.max(28, Math.floor(L.card.h * 0.18)),
-        IS_MOBILE ? Math.floor(base * 0.22) : Infinity
-      );
-      const romajiY = L.card.y + 70;
-      ctx.fillStyle = C.text; ctx.font = `800 ${romajiSize}px system-ui`;
+        const base = Math.min(L.card.w, L.card.h);
+        const romajiSize = clamp(28, Math.floor(L.card.h * 0.18), Math.floor(base * 0.22));
+        const romajiY = L.card.y + 70;
+        ctx.fillStyle = C.text; ctx.font = `800 ${romajiSize}px system-ui`;
       ctx.fillText(q.current.romaji, L.card.x + L.card.w / 2, romajiY);
       const m = ctx.measureText(q.current.romaji);
       const romajiH = (m.actualBoundingBoxAscent || romajiSize * 0.8) + (m.actualBoundingBoxDescent || romajiSize * 0.2);
-      const hiraganaY = romajiY + romajiH + 8 + SIZES.hiraganaQuizOffset;
-      ctx.fillStyle = C.sub; ctx.font = `600 ${SIZES.hiraganaQuizPx}px system-ui`;
-      ctx.fillText(q.current.hiragana, L.card.x + L.card.w / 2, hiraganaY);
+        const hiraganaY = romajiY + romajiH + 8 + SIZES.hiraganaQuizOffset;
+        ctx.fillStyle = C.sub; ctx.font = `600 ${SIZES.hiraganaQuizPx}px system-ui`;
+        ctx.fillText(q.current.hiragana, L.card.x + L.card.w / 2, hiraganaY);
     }
   }
 

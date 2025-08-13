@@ -1,13 +1,3 @@
-html, body { margin:0; padding:0; height:100%; background:#0b0f14; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; }
-canvas { display:block; width:100vw; height:100vh; touch-action: manipulation; }
-
-/* Reduz overscroll de iOS ao focar o input invisível */
-html, body { overscroll-behavior-y: contain; }
-
-/* Em telas muito estreitas, comprimimos os botões do topo */
-@media (max-width: 420px) {
-  :root{
-    --top-btn-w: 84px;   /* usado no layout.js via fallback numérico */
-    --top-btn-h: 34px;
-  }
-}
+html, body { margin:0; padding:0; height:100%; background:#0b0f14; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; }
+canvas { display:block; width:100vw; height:100vh; touch-action:manipulation; }
+html, body { overscroll-behavior-y:contain; }

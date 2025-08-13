@@ -1,6 +1,8 @@
 import { ctx, cvs, IS_MOBILE, mobileInput } from './main.js';
 import { roundRect } from './canvas-helpers.js';
 import { C, SIZES } from './constants.js';
+
+const clamp = (min, v, max) => Math.max(min, Math.min(v, max));
 import {
   State,
   currentCard,
@@ -24,7 +26,7 @@ export function layout() {
           H = cvs ? cvs.clientHeight : 600;
     const pad = Math.max(12, Math.floor(W * 0.02));
   const cardW = Math.min(880, W - pad * 2);
-  const cardH = Math.min(560, H - pad * 3 - 64);
+  const cardH = Math.min(560, H - pad * 3 - SIZES.topBtnH);
   const cx = (W - cardW) / 2, cy = pad * 2;
 
   const buttons = [], clickZones = [], inputs = [];
@@ -35,8 +37,8 @@ export function layout() {
   const streakBox = { x: bar.x + prog.w + 12, y: bar.y - 2, w: 220, h: 22 };
 
     // Botões principais
-    const topBtnW = IS_MOBILE ? 84 : 112;
-    const topBtnH = IS_MOBILE ? 34 : 36;
+    const topBtnW = SIZES.topBtnW;
+    const topBtnH = SIZES.topBtnH;
     const rightBoxW = topBtnW * 5 + 16 * 4;
   const rightBox = { x: W - pad - rightBoxW, y: bar.y - 10, w: rightBoxW, h: topBtnH };
 
@@ -190,8 +192,8 @@ export function layout() {
     }
 
     const totalPages = Math.max(1, Math.ceil(deck.length / State.manage.pageSize));
-    const bPrev = { x: cx + 16,               y: cy + cardH - 56, w: 112, h: 40, label: '◀ Anterior', fill: '#1f2937', onClick: () => { State.manage.page = Math.max(0, State.manage.page - 1); } };
-    const bNext = { x: cx + 16 + 112 + 12,    y: cy + cardH - 56, w: 112, h: 40, label: 'Próxima ▶',  fill: '#1f2937', onClick: () => { State.manage.page = Math.min(totalPages - 1, State.manage.page + 1); } };
+    const bPrev = { x: cx + 16,               y: cy + cardH - 56, w: SIZES.topBtnW, h: 40, label: '◀ Anterior', fill: '#1f2937', onClick: () => { State.manage.page = Math.max(0, State.manage.page - 1); } };
+    const bNext = { x: cx + 16 + SIZES.topBtnW + 12,    y: cy + cardH - 56, w: SIZES.topBtnW, h: 40, label: 'Próxima ▶',  fill: '#1f2937', onClick: () => { State.manage.page = Math.min(totalPages - 1, State.manage.page + 1); } };
     const bDel  = { x: cx + cardW - 160 - 16, y: cy + cardH - 56, w: 160, h: 40, label: 'Excluir selecionado', fill: '#dc2626', onClick: deleteSelected };
     buttons.push(bPrev, bNext, bDel);
 
