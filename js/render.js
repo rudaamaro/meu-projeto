@@ -1,4 +1,4 @@
-import { ctx, cvs } from './main.js';
+import { ctx, cvs, setMobileInputRect } from './main.js';
 import { C, SIZES } from './constants.js';
 import {
   roundRect,
@@ -15,6 +15,7 @@ import { parseAnswers, tick, incTick } from './utils.js';
 
 export function render() {
   incTick();
+  setMobileInputRect(null); // por padrão escondemos; modos sem input mantêm teclado fechado
   const L = layout();
   ctx.clearRect(0, 0, cvs.clientWidth, cvs.clientHeight);
 
@@ -71,6 +72,8 @@ export function render() {
       ctx.fillText('Tradução (PT-BR) — digite e pressione Enter:', L.card.x + 24, ansY - 36);
       const inp = { x: L.card.x + 24, y: ansY - 24, w: L.card.w - 48 - 150, h: 48, label: '', value: State.input, placeholder: 'ex.: olá; boa tarde', focused: true };
       drawInput(inp);
+      // informa ao main.js onde posicionar o input HTML (para abrir teclado no mobile)
+      setMobileInputRect({ x: inp.x, y: inp.y, w: inp.w, h: inp.h });
     }
   }
 
@@ -122,7 +125,7 @@ export function render() {
       ctx.fillText('Sem cartas suficientes. Adicione ⚙ algumas e volte ao Quiz.', L.card.x + L.card.w / 2, L.card.y + L.card.h / 2);
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      const romajiSize = Math.max(32, Math.floor(L.card.h * 0.18));
+      const romajiSize = Math.max(28, Math.min(48, Math.floor(L.card.h * 0.18)));
       const romajiY = L.card.y + 70;
       ctx.fillStyle = C.text; ctx.font = `800 ${romajiSize}px system-ui`;
       ctx.fillText(q.current.romaji, L.card.x + L.card.w / 2, romajiY);
