@@ -1,7 +1,5 @@
-import { cvs, mobileInput, hideMobileInput, bulkTextarea, hideBulkTextarea, syncMobileInput } from './main.js';
-import { IS_MOBILE } from './device.js';
-import { State, addCardFromForm, checkAnswer, chooseDifficulty, pasteFromClipboard } from './state.js';
-import { layout } from './layout.js';
+import { IS_MOBILE, mobileInput, syncMobileInput } from './main.js';
+import { State } from './state.js';
 
 export const mouse = { x: 0, y: 0, down: false };
 
