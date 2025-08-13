@@ -36,18 +36,45 @@ export function layout() {
   const prog = { x: bar.x, y: bar.y, w: Math.min(420, bar.w * 0.55), h: 16 };
   const streakBox = { x: bar.x + prog.w + 12, y: bar.y - 2, w: 220, h: 22 };
 
-    // Botões principais
+  const isNarrow = (cvs ? cvs.clientWidth : W) < 480;
+  let menuOverlay = null;
+  if (isNarrow) {
+    const hamburger = { x: W - 74 - pad, y: pad, w: 64, h: 36, label: '☰', onClick: () => { State.menuOpen = true; } };
+    buttons.push(hamburger);
+    if (State.menuOpen) {
+      const modalW = Math.min(260, W - pad * 2);
+      const modalH = 44 * 5 + 16 * 6;
+      const modalX = (W - modalW) / 2;
+      const modalY = (H - modalH) / 2;
+      clickZones.push({ x: 0, y: 0, w: W, h: H, onClick: () => { State.menuOpen = false; } });
+      const opts = [
+        { label: 'Estudar', action: () => { State.mode = 'study'; pickNext(); } },
+        { label: 'Treinar', action: () => { State.mode = 'train'; pickNextTrain(); } },
+        { label: 'Quiz',    action: () => { State.mode = 'quiz'; startQuizQuestion(); } },
+        { label: 'Resumo',  action: () => { State.mode = 'summary'; } },
+        { label: 'Lista',   action: () => { State.mode = 'manage'; } },
+      ];
+      let by = modalY + 16;
+      for (const o of opts) {
+        const b = { x: modalX + 16, y: by, w: modalW - 32, h: 44, label: o.label, onClick: () => { o.action(); State.menuOpen = false; } };
+        buttons.push(b);
+        by += 44 + 12;
+      }
+      menuOverlay = { x: modalX, y: modalY, w: modalW, h: modalH };
+    }
+  } else {
     const topBtnW = SIZES.topBtnW;
     const topBtnH = SIZES.topBtnH;
     const rightBoxW = topBtnW * 5 + 16 * 4;
-  const rightBox = { x: W - pad - rightBoxW, y: bar.y - 10, w: rightBoxW, h: topBtnH };
+    const rightBox = { x: W - pad - rightBoxW, y: bar.y - 10, w: rightBoxW, h: topBtnH };
 
-  const btnStudy = { x: rightBox.x, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Estudar', onClick: () => { State.mode = 'study'; pickNext(); } };
-  const btnTrain = { x: rightBox.x + topBtnW + 16, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Treinar', fill: '#0ea5e9', onClick: () => { State.mode = 'train'; pickNextTrain(); } };
-  const btnQuiz  = { x: rightBox.x + (topBtnW + 16) * 2, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Quiz', fill: '#f59e0b', onClick: () => { State.mode = 'quiz'; startQuizQuestion(); } };
-  const btnSum   = { x: rightBox.x + (topBtnW + 16) * 3, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Resumo', fill: '#8b5cf6', onClick: () => { State.mode = 'summary'; } };
-  const btnList  = { x: rightBox.x + (topBtnW + 16) * 4, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Lista', fill: '#334155', onClick: () => { State.mode = 'manage'; } };
-  buttons.push(btnStudy, btnTrain, btnQuiz, btnSum, btnList);
+    const btnStudy = { x: rightBox.x, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Estudar', onClick: () => { State.mode = 'study'; pickNext(); } };
+    const btnTrain = { x: rightBox.x + topBtnW + 16, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Treinar', fill: '#0ea5e9', onClick: () => { State.mode = 'train'; pickNextTrain(); } };
+    const btnQuiz  = { x: rightBox.x + (topBtnW + 16) * 2, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Quiz', fill: '#f59e0b', onClick: () => { State.mode = 'quiz'; startQuizQuestion(); } };
+    const btnSum   = { x: rightBox.x + (topBtnW + 16) * 3, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Resumo', fill: '#8b5cf6', onClick: () => { State.mode = 'summary'; } };
+    const btnList  = { x: rightBox.x + (topBtnW + 16) * 4, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Lista', fill: '#334155', onClick: () => { State.mode = 'manage'; } };
+    buttons.push(btnStudy, btnTrain, btnQuiz, btnSum, btnList);
+  }
 
   // Engrenagem (Adicionar)
     const gear = { x: pad, y: H - pad - 40, w: 40, h: 40, onClick: () => { State.mode = 'add'; State.focusField = 'hiragana'; if (IS_MOBILE && mobileInput) { mobileInput.value = State.addForm.hiragana || ''; mobileInput.focus(); const v = mobileInput.value || ''; mobileInput.setSelectionRange(v.length, v.length); } } };
@@ -253,5 +280,6 @@ export function layout() {
     cardH,
     gear,
     trainPills,
+    menuOverlay,
   };
 }

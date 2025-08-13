@@ -1,6 +1,6 @@
-export let cvs, ctx, mobileInput;
-export const IS_MOBILE =
-  /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+export let cvs, ctx, mobileInput, bulkTextarea;
+import { IS_MOBILE } from './constants.js';
+export { IS_MOBILE };
 
 import { State } from './state.js';
 import { render } from './render.js';
@@ -36,34 +36,63 @@ export function syncMobileInput(rectOrNull){
   else hideMobileInput();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  cvs = document.getElementById('app');
-  ctx = cvs.getContext('2d');
-  mobileInput = document.getElementById('mobileInput');
+export function showBulkTextareaOver(rect){
+  if (!bulkTextarea) return;
+  const r = cvs.getBoundingClientRect();
+  bulkTextarea.value = State.bulkText || '';
+  bulkTextarea.style.left = Math.round(r.left + rect.x) + 'px';
+  bulkTextarea.style.top  = Math.round(r.top  + rect.y) + 'px';
+  bulkTextarea.style.width  = Math.max(40, Math.floor(rect.w)) + 'px';
+  bulkTextarea.style.height = Math.max(40, Math.floor(rect.h)) + 'px';
+  bulkTextarea.focus();
+  const v = bulkTextarea.value || '';
+  bulkTextarea.setSelectionRange(v.length, v.length);
+}
 
-  window.addEventListener('resize', fitCanvas); fitCanvas();
-  window.addEventListener('keydown', keydownHandler);
-  cvs.addEventListener('mousemove', mousemoveHandler);
-  cvs.addEventListener('mousedown', mousedownHandler);
-  window.addEventListener('mouseup', mouseupHandler);
+export function hideBulkTextarea(){
+  if (!bulkTextarea) return;
+  bulkTextarea.blur();
+  bulkTextarea.style.left = '-9999px';
+  bulkTextarea.style.top  = '-9999px';
+}
 
-  if (IS_MOBILE && mobileInput) {
-    mobileInput.value = State.input || '';
-    mobileInput.addEventListener('input', () => {
-      State.input = mobileInput.value;
-      if (State.mode === 'add' && State.focusField) {
-        State.addForm[State.focusField] = mobileInput.value;
-      }
-    });
-    mobileInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); }
-    }, { passive:false });
-  }
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
+    cvs = document.getElementById('app');
+    ctx = cvs.getContext('2d');
+    mobileInput = document.getElementById('mobileInput');
+    bulkTextarea = document.getElementById('bulkTextarea');
 
-  requestAnimationFrame(render);
+    window.addEventListener('resize', fitCanvas); fitCanvas();
+    window.addEventListener('keydown', keydownHandler);
+    cvs.addEventListener('mousemove', mousemoveHandler);
+    cvs.addEventListener('mousedown', mousedownHandler);
+    window.addEventListener('mouseup', mouseupHandler);
 
-  const params = new URLSearchParams(location.search);
-  if (params.has('test')) {
-    import('./tests-smoke.js').catch(console.error);
-  }
-});
+    if (IS_MOBILE && mobileInput) {
+      mobileInput.value = State.input || '';
+      mobileInput.addEventListener('input', () => {
+        State.input = mobileInput.value;
+        if (State.mode === 'add' && State.focusField) {
+          State.addForm[State.focusField] = mobileInput.value;
+        }
+      });
+      mobileInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); }
+      }, { passive:false });
+    }
+
+    if (bulkTextarea) {
+      bulkTextarea.addEventListener('input', () => {
+        State.bulkText = bulkTextarea.value;
+      });
+    }
+
+    requestAnimationFrame(render);
+
+    const params = new URLSearchParams(location.search);
+    if (params.has('test')) {
+      import('./tests-smoke.js').catch(console.error);
+    }
+  });
+}

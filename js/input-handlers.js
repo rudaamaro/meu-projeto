@@ -1,4 +1,4 @@
-import { cvs, IS_MOBILE, mobileInput, hideMobileInput } from './main.js';
+import { cvs, IS_MOBILE, mobileInput, hideMobileInput, bulkTextarea, hideBulkTextarea } from './main.js';
 import { State, addCardFromForm, checkAnswer, chooseDifficulty, pasteFromClipboard } from './state.js';
 import { layout } from './layout.js';
 
@@ -55,25 +55,41 @@ function hit(b, x, y) { return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.
 export function handleClick(x, y) {
   const u = layout();
   if (State.lastInputRect && hit(State.lastInputRect, x, y)) return;
-  hideMobileInput();
+  if (State.lastBulkRect && hit(State.lastBulkRect, x, y)) return;
+  hideMobileInput(); hideBulkTextarea();
   const all = [...u.buttons, ...u.clickZones];
   for (const b of all) { if (hit(b, x, y)) { b.onClick && b.onClick(); return; } }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  cvs.addEventListener('touchstart', (e) => {
-    if (!IS_MOBILE || !State.lastInputRect) return;
-    const t = e.changedTouches[0];
-    const r = cvs.getBoundingClientRect();
-    const x = t.clientX - r.left, y = t.clientY - r.top;
-    const { x:ix, y:iy, w:iw, h:ih } = State.lastInputRect;
-    const inside = x>=ix && x<=ix+iw && y>=iy && y<=iy+ih;
-    if (inside && mobileInput) {
-      e.preventDefault();
-      mobileInput.focus();
-      const v = mobileInput.value || '';
-      mobileInput.setSelectionRange(v.length, v.length);
-    }
-  }, { passive:false });
-});
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
+    cvs.addEventListener('touchstart', (e) => {
+      if (!IS_MOBILE) return;
+      const t = e.changedTouches[0];
+      const r = cvs.getBoundingClientRect();
+      const x = t.clientX - r.left, y = t.clientY - r.top;
+      if (State.lastInputRect) {
+        const { x:ix, y:iy, w:iw, h:ih } = State.lastInputRect;
+        const inside = x>=ix && x<=ix+iw && y>=iy && y<=iy+ih;
+        if (inside && mobileInput) {
+          e.preventDefault();
+          mobileInput.focus();
+          const v = mobileInput.value || '';
+          mobileInput.setSelectionRange(v.length, v.length);
+          return;
+        }
+      }
+      if (State.mode==='bulk' && State.lastBulkRect) {
+        const { x:bx, y:by, w:bw, h:bh } = State.lastBulkRect;
+        const insideB = x>=bx && x<=bx+bw && y>=by && y<=by+bh;
+        if (insideB && bulkTextarea) {
+          e.preventDefault();
+          bulkTextarea.focus();
+          const v = bulkTextarea.value || '';
+          bulkTextarea.setSelectionRange(v.length, v.length);
+        }
+      }
+    }, { passive:false });
+  });
+}
 
