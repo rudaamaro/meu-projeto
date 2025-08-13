@@ -1,4 +1,5 @@
-import { ctx, cvs, IS_MOBILE, mobileInput } from './main.js';
+import { ctx, cvs, mobileInput } from './main.js';
+import { IS_MOBILE } from './device.js';
 import { roundRect } from './canvas-helpers.js';
 import { C, SIZES } from './constants.js';
 
@@ -25,28 +26,27 @@ export function layout() {
     const W = cvs ? cvs.clientWidth : 800,
           H = cvs ? cvs.clientHeight : 600;
     const pad = Math.max(12, Math.floor(W * 0.02));
+    const topSafe = IS_MOBILE ? 12 : 0;
   const cardW = Math.min(880, W - pad * 2);
-  const cardH = Math.min(560, H - pad * 3 - SIZES.topBtnH);
-  const cx = (W - cardW) / 2, cy = pad * 2;
-
-  const buttons = [], clickZones = [], inputs = [];
-
-  // Barra superior
-  const bar = { x: pad, y: pad, w: W - pad * 2, h: 20 };
+  const cx = (W - cardW) / 2;
+  const bar = { x: pad, y: topSafe + pad, w: W - pad * 2, h: 20 };
   const prog = { x: bar.x, y: bar.y, w: Math.min(420, bar.w * 0.55), h: 16 };
   const streakBox = { x: bar.x + prog.w + 12, y: bar.y - 2, w: 220, h: 22 };
+  const cy = bar.y + 26 + 16;
+  const cardH = Math.min(560, H - cy - pad);
 
-  const isNarrow = (cvs ? cvs.clientWidth : W) < 480;
+  const buttons = [], clickZones = [], inputs = [];
+  let gear = null;
   let menuOverlay = null;
-  if (isNarrow) {
-    const hamburger = { x: W - 74 - pad, y: pad, w: 64, h: 36, label: '☰', onClick: () => { State.menuOpen = true; } };
-    buttons.push(hamburger);
-    if (State.menuOpen) {
+
+  if (IS_MOBILE) {
+    gear = { x: W - 64 - pad, y: bar.y - 4, w: 64, h: 36, onClick: () => { State.showMenu = true; } };
+    if (!State.showMenu) clickZones.push(gear);
+    if (State.showMenu) {
       const modalW = Math.min(260, W - pad * 2);
       const modalH = 44 * 5 + 16 * 6;
       const modalX = (W - modalW) / 2;
       const modalY = (H - modalH) / 2;
-      clickZones.push({ x: 0, y: 0, w: W, h: H, onClick: () => { State.menuOpen = false; } });
       const opts = [
         { label: 'Estudar', action: () => { State.mode = 'study'; pickNext(); } },
         { label: 'Treinar', action: () => { State.mode = 'train'; pickNextTrain(); } },
@@ -56,11 +56,13 @@ export function layout() {
       ];
       let by = modalY + 16;
       for (const o of opts) {
-        const b = { x: modalX + 16, y: by, w: modalW - 32, h: 44, label: o.label, onClick: () => { o.action(); State.menuOpen = false; } };
+        const b = { x: modalX + 16, y: by, w: modalW - 32, h: 44, label: o.label, onClick: () => { o.action(); State.showMenu = false; } };
         buttons.push(b);
+        clickZones.push(b);
         by += 44 + 12;
       }
       menuOverlay = { x: modalX, y: modalY, w: modalW, h: modalH };
+      return { pad, bar, prog, streakBox, buttons, clickZones, card: { x: cx, y: cy, w: cardW, h: cardH }, inputs, cx, cy, cardW, cardH, gear, trainPills: [], menuOverlay };
     }
   } else {
     const topBtnW = SIZES.topBtnW;
@@ -77,8 +79,8 @@ export function layout() {
   }
 
   // Engrenagem (Adicionar)
-    const gear = { x: pad, y: H - pad - 40, w: 40, h: 40, onClick: () => { State.mode = 'add'; State.focusField = 'hiragana'; if (IS_MOBILE && mobileInput) { mobileInput.value = State.addForm.hiragana || ''; mobileInput.focus(); const v = mobileInput.value || ''; mobileInput.setSelectionRange(v.length, v.length); } } };
-  clickZones.push(gear);
+  const addBtn = { x: pad, y: H - pad - 40, w: 40, h: 40, onClick: () => { State.mode = 'add'; State.focusField = 'hiragana'; if (IS_MOBILE && mobileInput) { mobileInput.value = State.addForm.hiragana || ''; mobileInput.focus(); const v = mobileInput.value || ''; mobileInput.setSelectionRange(v.length, v.length); } } };
+  clickZones.push(addBtn);
 
   // Card
   const card = { x: cx, y: cy, w: cardW, h: cardH };

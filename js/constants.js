@@ -1,6 +1,4 @@
-export const IS_MOBILE =
-  (typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) ||
-  (typeof window !== 'undefined' && window.innerWidth < 768);
+import { IS_MOBILE } from './device.js';
 
 export const C = { card:'#121826',accent:'#43b6ff',accent2:'#7cffad',text:'#e7eef7',sub:'#9fb3c8',danger:'#ff6b6b',warn:'#ffd166',stroke:'rgba(255,255,255,0.08)' };
 

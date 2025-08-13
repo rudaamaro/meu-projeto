@@ -1,4 +1,5 @@
-import { cvs, IS_MOBILE, mobileInput, hideMobileInput, bulkTextarea, hideBulkTextarea } from './main.js';
+import { cvs, mobileInput, hideMobileInput, bulkTextarea, hideBulkTextarea, syncMobileInput } from './main.js';
+import { IS_MOBILE } from './device.js';
 import { State, addCardFromForm, checkAnswer, chooseDifficulty, pasteFromClipboard } from './state.js';
 import { layout } from './layout.js';
 
@@ -76,6 +77,7 @@ if (typeof window !== 'undefined') {
           mobileInput.focus();
           const v = mobileInput.value || '';
           mobileInput.setSelectionRange(v.length, v.length);
+          syncMobileInput(State.lastInputRect);
           return;
         }
       }
