@@ -1,5 +1,20 @@
-import { IS_MOBILE, mobileInput, syncMobileInput } from './main.js';
-import { State } from './state.js';
+import {
+  IS_MOBILE,
+  cvs,
+  mobileInput,
+  bulkTextarea,
+  hideMobileInput,
+  hideBulkTextarea,
+  syncMobileInput
+} from './main.js';
+import {
+  State,
+  checkAnswer,
+  chooseDifficulty,
+  addCardFromForm,
+  pasteFromClipboard
+} from './state.js';
+import { layout } from './layout.js';
 
 export const mouse = { x: 0, y: 0, down: false };
 
@@ -44,8 +59,11 @@ export function keydownHandler(e) {
 }
 
 export function mousemoveHandler(e) {
-  const r = cvs.getBoundingClientRect();
-  mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+  const can = cvs || document.getElementById('app');
+  if (!can) return;
+  const r = can.getBoundingClientRect();
+  mouse.x = e.clientX - r.left;
+  mouse.y = e.clientY - r.top;
 }
 export function mousedownHandler() { mouse.down = true; handleClick(mouse.x, mouse.y); }
 export function mouseupHandler() { mouse.down = false; }
