@@ -22,15 +22,20 @@ import { speakJP } from './speech.js';
 export function layout() {
     const W = cvs ? cvs.clientWidth : 800,
           H = cvs ? cvs.clientHeight : 600;
+    const cs = typeof window !== 'undefined' ? getComputedStyle(document.documentElement) : null;
+    const safeTop = cs ? parseInt(cs.getPropertyValue('--safe-top')) || 0 : 0;
+    const safeRight = cs ? parseInt(cs.getPropertyValue('--safe-right')) || 0 : 0;
+    const safeBottom = cs ? parseInt(cs.getPropertyValue('--safe-bottom')) || 0 : 0;
+    const safeLeft = cs ? parseInt(cs.getPropertyValue('--safe-left')) || 0 : 0;
     const pad = Math.max(12, Math.floor(W * 0.02));
-  const cardW = Math.min(880, W - pad * 2);
-  const cardH = Math.min(560, H - pad * 3 - 64);
-  const cx = (W - cardW) / 2, cy = pad * 2;
+  const cardW = Math.min(880, W - pad * 2 - safeLeft - safeRight);
+  const cardH = Math.min(560, H - pad * 3 - 64 - safeTop - safeBottom);
+  const cx = safeLeft + (W - safeLeft - safeRight - cardW) / 2, cy = pad * 2 + safeTop;
 
   const buttons = [], clickZones = [], inputs = [];
 
   // Barra superior
-  const bar = { x: pad, y: pad, w: W - pad * 2, h: 20 };
+  const bar = { x: pad + safeLeft, y: pad + safeTop, w: W - pad * 2 - safeLeft - safeRight, h: 20 };
   const prog = { x: bar.x, y: bar.y, w: Math.min(420, bar.w * 0.55), h: 16 };
   const streakBox = { x: bar.x + prog.w + 12, y: bar.y - 2, w: 220, h: 22 };
 
@@ -38,7 +43,7 @@ export function layout() {
     const topBtnW = IS_MOBILE ? 84 : 112;
     const topBtnH = IS_MOBILE ? 34 : 36;
     const rightBoxW = topBtnW * 5 + 16 * 4;
-  const rightBox = { x: W - pad - rightBoxW, y: bar.y - 10, w: rightBoxW, h: topBtnH };
+  const rightBox = { x: W - pad - safeRight - rightBoxW, y: bar.y - 10, w: rightBoxW, h: topBtnH };
 
   const btnStudy = { x: rightBox.x, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Estudar', onClick: () => { State.mode = 'study'; pickNext(); } };
   const btnTrain = { x: rightBox.x + topBtnW + 16, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Treinar', fill: '#0ea5e9', onClick: () => { State.mode = 'train'; pickNextTrain(); } };
@@ -48,7 +53,7 @@ export function layout() {
   buttons.push(btnStudy, btnTrain, btnQuiz, btnSum, btnList);
 
   // Engrenagem (Adicionar)
-    const gear = { x: pad, y: H - pad - 40, w: 40, h: 40, onClick: () => { State.mode = 'add'; State.focusField = 'hiragana'; if (IS_MOBILE && mobileInput) { mobileInput.value = State.addForm.hiragana || ''; mobileInput.focus(); const v = mobileInput.value || ''; mobileInput.setSelectionRange(v.length, v.length); } } };
+    const gear = { x: pad + safeLeft, y: H - pad - 40 - safeBottom, w: 40, h: 40, onClick: () => { State.mode = 'add'; State.focusField = 'hiragana'; if (IS_MOBILE && mobileInput) { mobileInput.value = State.addForm.hiragana || ''; mobileInput.focus(); const v = mobileInput.value || ''; mobileInput.setSelectionRange(v.length, v.length); } } };
   clickZones.push(gear);
 
   // Card
