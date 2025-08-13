@@ -1,5 +1,6 @@
 export let cvs, ctx, mobileInput, bulkTextarea;
 import { IS_MOBILE } from './device.js';
+export { IS_MOBILE };
 
 import { State } from './state.js';
 import { render } from './render.js';
