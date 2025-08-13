@@ -1,6 +1,7 @@
+// js/render.js
+import { roundRect, drawButton, drawIconButton, drawPill, drawInput, drawProgressBar, drawMultiline, wrapAndDraw } from './canvas-helpers.js';
 import {ctx,cvs} from './main.js';
 import {C,SIZES} from './constants.js';
-import {drawIconButton,drawButton,drawPill,drawInput,drawProgressBar,drawMultiline} from './canvas-helpers.js';
 import {State,currentCard,stats,deck,dueCards,trainPool} from './state.js';
 import {layout} from './layout.js';
 import {parseAnswers,tick,incTick} from './utils.js';
