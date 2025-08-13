@@ -1,5 +1,3 @@
-export let cvs, ctx;
-
 import './utils.js';
 import './constants.js';
 import './date-utils.js';
@@ -10,12 +8,10 @@ import './quiz.js';
 import './speech.js';
 import './canvas-helpers.js';
 import './layout.js';
-import {render} from './render.js';
-import {keydownHandler,mousemoveHandler,mousedownHandler,mouseupHandler} from './input-handlers.js';
-import './tests-smoke.js';
+import { render } from './render.js';
+import { keydownHandler, mousemoveHandler, mousedownHandler, mouseupHandler } from './input-handlers.js';
 
-cvs=document.getElementById('app');
-ctx=cvs.getContext('2d');
+export let cvs, ctx;
 
 function fitCanvas(){
   const dpr=Math.max(1,Math.floor(window.devicePixelRatio||1));
@@ -23,11 +19,14 @@ function fitCanvas(){
   cvs.width=w*dpr; cvs.height=h*dpr; cvs.style.width=w+'px'; cvs.style.height=h+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
-window.addEventListener('resize',fitCanvas); fitCanvas();
 
-window.addEventListener('keydown',keydownHandler);
-cvs.addEventListener('mousemove',mousemoveHandler);
-cvs.addEventListener('mousedown',mousedownHandler);
-window.addEventListener('mouseup',mouseupHandler);
-
-render();
+window.addEventListener('DOMContentLoaded', () => {
+  cvs=document.getElementById('app');
+  ctx=cvs.getContext('2d');
+  window.addEventListener('resize',fitCanvas); fitCanvas();
+  window.addEventListener('keydown',keydownHandler);
+  cvs.addEventListener('mousemove',mousemoveHandler);
+  cvs.addEventListener('mousedown',mousedownHandler);
+  window.addEventListener('mouseup',mouseupHandler);
+  requestAnimationFrame(render);
+});
