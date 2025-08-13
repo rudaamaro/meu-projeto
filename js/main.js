@@ -3,7 +3,7 @@ import { IS_MOBILE } from './device.js';
 
 import { State } from './state.js';
 import { render } from './render.js';
-import { keydownHandler, mousemoveHandler, mousedownHandler, mouseupHandler } from './input-handlers.js';
+import { keydownHandler, mousemoveHandler, mousedownHandler, mouseupHandler, initTouchHandlers } from './input-handlers.js';
 
 function fitCanvas(){
   const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
@@ -86,6 +86,8 @@ if (typeof window !== 'undefined') {
         State.bulkText = bulkTextarea.value;
       });
     }
+
+    initTouchHandlers();
 
     requestAnimationFrame(render);
 

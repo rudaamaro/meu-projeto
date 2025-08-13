@@ -62,36 +62,35 @@ export function handleClick(x, y) {
   for (const b of all) { if (hit(b, x, y)) { b.onClick && b.onClick(); return; } }
 }
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('DOMContentLoaded', () => {
-    cvs.addEventListener('touchstart', (e) => {
-      if (!IS_MOBILE) return;
-      const t = e.changedTouches[0];
-      const r = cvs.getBoundingClientRect();
-      const x = t.clientX - r.left, y = t.clientY - r.top;
-      if (State.lastInputRect) {
-        const { x:ix, y:iy, w:iw, h:ih } = State.lastInputRect;
-        const inside = x>=ix && x<=ix+iw && y>=iy && y<=iy+ih;
-        if (inside && mobileInput) {
-          e.preventDefault();
-          mobileInput.focus();
-          const v = mobileInput.value || '';
-          mobileInput.setSelectionRange(v.length, v.length);
-          syncMobileInput(State.lastInputRect);
-          return;
-        }
+export function initTouchHandlers() {
+  if (typeof window === 'undefined' || !cvs) return;
+  cvs.addEventListener('touchstart', (e) => {
+    if (!IS_MOBILE) return;
+    const t = e.changedTouches[0];
+    const r = cvs.getBoundingClientRect();
+    const x = t.clientX - r.left, y = t.clientY - r.top;
+    if (State.lastInputRect) {
+      const { x:ix, y:iy, w:iw, h:ih } = State.lastInputRect;
+      const inside = x>=ix && x<=ix+iw && y>=iy && y<=iy+ih;
+      if (inside && mobileInput) {
+        e.preventDefault();
+        mobileInput.focus();
+        const v = mobileInput.value || '';
+        mobileInput.setSelectionRange(v.length, v.length);
+        syncMobileInput(State.lastInputRect);
+        return;
       }
-      if (State.mode==='bulk' && State.lastBulkRect) {
-        const { x:bx, y:by, w:bw, h:bh } = State.lastBulkRect;
-        const insideB = x>=bx && x<=bx+bw && y>=by && y<=by+bh;
-        if (insideB && bulkTextarea) {
-          e.preventDefault();
-          bulkTextarea.focus();
-          const v = bulkTextarea.value || '';
-          bulkTextarea.setSelectionRange(v.length, v.length);
-        }
+    }
+    if (State.mode==='bulk' && State.lastBulkRect) {
+      const { x:bx, y:by, w:bw, h:bh } = State.lastBulkRect;
+      const insideB = x>=bx && x<=bx+bw && y>=by && y<=by+bh;
+      if (insideB && bulkTextarea) {
+        e.preventDefault();
+        bulkTextarea.focus();
+        const v = bulkTextarea.value || '';
+        bulkTextarea.setSelectionRange(v.length, v.length);
       }
-    }, { passive:false });
-  });
+    }
+  }, { passive:false });
 }
 
