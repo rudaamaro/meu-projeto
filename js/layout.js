@@ -1,7 +1,6 @@
-import { cvs, ctx } from './main.js';
+import { ctx, cvs, IS_MOBILE, mobileInput } from './main.js';
 import { roundRect } from './canvas-helpers.js';
 import { C, SIZES } from './constants.js';
-import { showMobileInput } from './input-handlers.js';
 import {
   State,
   currentCard,
@@ -21,8 +20,8 @@ import { startQuizQuestion, selectQuizOption, nextQuiz } from './quiz.js';
 import { speakJP } from './speech.js';
 
 export function layout() {
-  const W = cvs.clientWidth, H = cvs.clientHeight;
-  const pad = Math.max(16, Math.floor(W * 0.02));
+    const W = cvs.clientWidth, H = cvs.clientHeight;
+    const pad = Math.max(12, Math.floor(W * 0.02));
   const cardW = Math.min(880, W - pad * 2);
   const cardH = Math.min(560, H - pad * 3 - 64);
   const cx = (W - cardW) / 2, cy = pad * 2;
@@ -34,10 +33,10 @@ export function layout() {
   const prog = { x: bar.x, y: bar.y, w: Math.min(420, bar.w * 0.55), h: 16 };
   const streakBox = { x: bar.x + prog.w + 12, y: bar.y - 2, w: 220, h: 22 };
 
-  // Botões principais
-  const topBtnW = Math.max(64, Math.floor((W - pad * 2 - 16 * 4) / 5));
-  const topBtnH = Math.max(32, Math.floor(topBtnW * 0.32));
-  const rightBoxW = topBtnW * 5 + 16 * 4;
+    // Botões principais
+    const topBtnW = IS_MOBILE ? 84 : 112;
+    const topBtnH = IS_MOBILE ? 34 : 36;
+    const rightBoxW = topBtnW * 5 + 16 * 4;
   const rightBox = { x: W - pad - rightBoxW, y: bar.y - 10, w: rightBoxW, h: topBtnH };
 
   const btnStudy = { x: rightBox.x, y: rightBox.y, w: topBtnW, h: topBtnH, label: 'Estudar', onClick: () => { State.mode = 'study'; pickNext(); } };
@@ -48,7 +47,7 @@ export function layout() {
   buttons.push(btnStudy, btnTrain, btnQuiz, btnSum, btnList);
 
   // Engrenagem (Adicionar)
-  const gear = { x: pad, y: H - pad - 40, w: 40, h: 40, onClick: () => { State.mode = 'add'; State.focusField = 'hiragana'; showMobileInput(State.addForm.hiragana, v => { State.addForm.hiragana = v; }); } };
+    const gear = { x: pad, y: H - pad - 40, w: 40, h: 40, onClick: () => { State.mode = 'add'; State.focusField = 'hiragana'; if (IS_MOBILE && mobileInput) { mobileInput.value = State.addForm.hiragana || ''; mobileInput.focus(); const v = mobileInput.value || ''; mobileInput.setSelectionRange(v.length, v.length); } } };
   clickZones.push(gear);
 
   // Card
@@ -86,7 +85,6 @@ export function layout() {
       const ry = startY + Math.max(SIZES.hiraganaStudyMin, Math.floor(cardH * SIZES.hiraganaStudyFactor)) + 8;
       let afterY = ry + 36;
       const ansY = Math.min(cy + cardH - 120, afterY + 16);
-      clickZones.push({ x: cx + 24, y: ansY - 24, w: cardW - 48 - 150, h: 48, onClick: () => { showMobileInput(State.input, v => { State.input = v; }); } });
     } else {
       const bx = cx + cardW - (120 * 3 + 12 * 2) - 16, by = cy + cardH - 56;
       const bHard = { x: bx,                y: by, w: 120, h: 44, label: 'Difícil (1)', fill: C.danger, onClick: () => chooseDifficulty('dificil') };
@@ -110,9 +108,9 @@ export function layout() {
     const bBulk = { x: ix,         y: cy + 372, w: iw,  h: 44, label: 'Colar lista (Importar em massa)', fill: '#334155', onClick: openBulk };
     buttons.push(bTab, bAdd, bBulk);
 
-    clickZones.push({ x: i1.x, y: i1.y, w: i1.w, h: i1.h, onClick: () => { State.focusField = 'hiragana'; showMobileInput(State.addForm.hiragana, v => { State.addForm.hiragana = v; }); } });
-    clickZones.push({ x: i2.x, y: i2.y, w: i2.w, h: i2.h, onClick: () => { State.focusField = 'romaji'; showMobileInput(State.addForm.romaji, v => { State.addForm.romaji = v; }); } });
-    clickZones.push({ x: i3.x, y: i3.y, w: i3.w, h: i3.h, onClick: () => { State.focusField = 'pt'; showMobileInput(State.addForm.pt, v => { State.addForm.pt = v; }); } });
+    clickZones.push({ x: i1.x, y: i1.y, w: i1.w, h: i1.h, onClick: () => { State.focusField = 'hiragana'; if (IS_MOBILE && mobileInput) { mobileInput.value = State.addForm.hiragana || ''; mobileInput.focus(); const v = mobileInput.value || ''; mobileInput.setSelectionRange(v.length, v.length); } } });
+    clickZones.push({ x: i2.x, y: i2.y, w: i2.w, h: i2.h, onClick: () => { State.focusField = 'romaji'; if (IS_MOBILE && mobileInput) { mobileInput.value = State.addForm.romaji || ''; mobileInput.focus(); const v = mobileInput.value || ''; mobileInput.setSelectionRange(v.length, v.length); } } });
+    clickZones.push({ x: i3.x, y: i3.y, w: i3.w, h: i3.h, onClick: () => { State.focusField = 'pt'; if (IS_MOBILE && mobileInput) { mobileInput.value = State.addForm.pt || ''; mobileInput.focus(); const v = mobileInput.value || ''; mobileInput.setSelectionRange(v.length, v.length); } } });
   }
 
   // BULK

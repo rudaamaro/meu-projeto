@@ -4,14 +4,16 @@ import { SIZES } from './constants.js';
 import './date-utils.js';
 import './storage.js';
 import './srs.js';
-import './state.js';
 import './quiz.js';
 import './speech.js';
 import './layout.js';
 import { render } from './render.js';
 import { keydownHandler, mousemoveHandler, mousedownHandler, mouseupHandler } from './input-handlers.js';
+import { State, checkAnswer } from './state.js';
 
-export let cvs, ctx;
+export let cvs, ctx, mobileInput;
+export const IS_MOBILE =
+  /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
 
 function fitCanvas() {
   const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
@@ -19,45 +21,68 @@ function fitCanvas() {
   cvs.width = w * dpr; cvs.height = h * dpr;
   cvs.style.width = w + 'px'; cvs.style.height = h + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const scale = Math.min(w / 800, h / 600);
-  SIZES.hiraganaQuizPx = Math.max(20, Math.floor(24 * scale));
-  SIZES.hiraganaQuizOffset = Math.floor(40 * scale);
-  SIZES.hiraganaManagePx = Math.max(10, Math.floor(12 * scale));
+}
+
+function placeMobileInputOverRect(rect){
+  const r = cvs.getBoundingClientRect();
+  const left = Math.round(r.left + rect.x);
+  const top  = Math.round(r.top  + rect.y);
+  mobileInput.style.left = left + 'px';
+  mobileInput.style.top  = top  + 'px';
+  mobileInput.style.width  = Math.max(40, Math.floor(rect.w)) + 'px';
+  mobileInput.style.height = Math.max(28, Math.floor(rect.h)) + 'px';
+}
+
+export function hideMobileInput(){
+  if(!mobileInput) return;
+  mobileInput.blur();
+  mobileInput.style.left = '-9999px';
+  mobileInput.style.top  = '-9999px';
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   cvs = document.getElementById('app');
   ctx = cvs.getContext('2d');
 
-  window.addEventListener('resize', fitCanvas);
-  fitCanvas();
-
+  window.addEventListener('resize', fitCanvas); fitCanvas();
   window.addEventListener('keydown', keydownHandler);
   cvs.addEventListener('mousemove', mousemoveHandler);
   cvs.addEventListener('mousedown', mousedownHandler);
   window.addEventListener('mouseup', mouseupHandler);
 
-  cvs.addEventListener('touchstart', (e) => {
-    const t = e.changedTouches[0];
-    mousemoveHandler(t);
-    mousedownHandler();
-    e.preventDefault();
-  }, { passive: false });
-  cvs.addEventListener('touchmove', (e) => {
-    const t = e.changedTouches[0];
-    mousemoveHandler(t);
-    e.preventDefault();
-  }, { passive: false });
-  window.addEventListener('touchend', (e) => {
-    mouseupHandler();
-    e.preventDefault();
-  }, { passive: false });
+  mobileInput = document.getElementById('mobileInput');
+
+  if (IS_MOBILE && mobileInput) {
+    mobileInput.value = State.input || '';
+
+    mobileInput.addEventListener('input', () => {
+      State.input = mobileInput.value;
+      if (State.mode === 'add' && State.focusField) {
+        State.addForm[State.focusField] = mobileInput.value;
+      }
+    });
+
+    mobileInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (typeof checkAnswer === 'function') checkAnswer();
+      }
+    }, { passive: false });
+  }
 
   requestAnimationFrame(render);
 
-  // ✅ Só carregue os testes DEPOIS de cvs/ctx existirem, e apenas se ?test estiver na URL
   const params = new URLSearchParams(location.search);
   if (params.has('test')) {
     import('./tests-smoke.js').catch(console.error);
   }
 });
+
+export function syncMobileInput(rectOrNull){
+  if (!IS_MOBILE || !mobileInput) return;
+  if (rectOrNull) {
+    placeMobileInputOverRect(rectOrNull);
+  } else {
+    hideMobileInput();
+  }
+}

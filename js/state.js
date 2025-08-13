@@ -13,11 +13,12 @@ export const State={
   focusField:null,
   addForm:{hiragana:'',romaji:'',pt:''},
   message:'',
-  manage:{page:0,pageSize:10,selected:null,sort:'due'},
-  bulkText:'',
-  trainFilter:'todas',
-  quiz:{current:null, options:[], correctIndex:-1, selectedIndex:-1}
-};
+    manage:{page:0,pageSize:10,selected:null,sort:'due'},
+    bulkText:'',
+    trainFilter:'todas',
+    quiz:{current:null, options:[], correctIndex:-1, selectedIndex:-1},
+    lastInputRect:null
+  };
 
 export let currentCard=null;
 

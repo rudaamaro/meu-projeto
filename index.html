@@ -2,12 +2,23 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Flashcards JP↔PT — Canvas</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <canvas id="app"></canvas>
+
+  <!-- INPUT INVISÍVEL para abrir teclado no mobile -->
+  <input id="mobileInput"
+         type="text"
+         inputmode="text"
+         enterkeyhint="go"
+         autocomplete="off"
+         autocapitalize="off"
+         autocorrect="off"
+         spellcheck="false"
+         style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0.02; background:transparent; color:transparent; caret-color:#7ee7f3; border:0; outline:0; z-index:10; pointer-events:auto;" />
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>

@@ -1,43 +1,8 @@
-import { cvs } from './main.js';
+import { cvs, IS_MOBILE, mobileInput, hideMobileInput } from './main.js';
 import { State, addCardFromForm, checkAnswer, chooseDifficulty, pasteFromClipboard } from './state.js';
 import { layout } from './layout.js';
 
 export const mouse = { x: 0, y: 0, down: false };
-
-const mobileInput = document.createElement('input');
-mobileInput.type = 'text';
-mobileInput.autocomplete = 'off';
-mobileInput.autocapitalize = 'off';
-mobileInput.spellcheck = false;
-mobileInput.style.position = 'fixed';
-mobileInput.style.opacity = '0';
-mobileInput.style.left = '-1000px';
-mobileInput.style.top = '-1000px';
-mobileInput.style.width = '1px';
-mobileInput.style.height = '1px';
-mobileInput.style.pointerEvents = 'none';
-document.body.appendChild(mobileInput);
-
-let mobileCB = null;
-mobileInput.addEventListener('input', () => { if (mobileCB) mobileCB(mobileInput.value); });
-
-export function showMobileInput(value = '', cb) {
-  mobileInput.value = value;
-  mobileCB = cb;
-  mobileInput.style.left = '0px';
-  mobileInput.style.top = '0px';
-  mobileInput.style.pointerEvents = 'none';
-  mobileInput.focus();
-  setTimeout(() => mobileInput.setSelectionRange(mobileInput.value.length, mobileInput.value.length), 0);
-}
-
-export function hideMobileInput() {
-  mobileCB = null;
-  mobileInput.blur();
-  mobileInput.style.left = '-1000px';
-  mobileInput.style.top = '-1000px';
-  mobileInput.style.pointerEvents = 'none';
-}
 
 export function keydownHandler(e) {
   const mobileActive = document.activeElement === mobileInput;
@@ -58,13 +23,25 @@ export function keydownHandler(e) {
   }
   if (State.mode === 'add') {
     const f = State.focusField || 'hiragana';
-    if (e.key === 'Tab') { e.preventDefault(); State.focusField = f === 'hiragana' ? 'romaji' : f === 'romaji' ? 'pt' : 'hiragana'; showMobileInput(State.addForm[State.focusField], v => { State.addForm[State.focusField] = v; }); return; }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      State.focusField = f === 'hiragana' ? 'romaji' : f === 'romaji' ? 'pt' : 'hiragana';
+      if (IS_MOBILE && mobileInput) {
+        mobileInput.value = State.addForm[State.focusField] || '';
+        mobileInput.focus();
+        const v = mobileInput.value || '';
+        mobileInput.setSelectionRange(v.length, v.length);
+      }
+      return;
+    }
     if (e.key === 'Enter') { hideMobileInput(); addCardFromForm(); return; }
     if (mobileActive) return;
     if (e.key === 'Backspace') { State.addForm[f] = State.addForm[f].slice(0, -1); return; }
     if (e.key.length === 1) { State.addForm[f] += e.key; return; }
   }
-  if (State.mode === 'bulk') { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { pasteFromClipboard(); } }
+  if (State.mode === 'bulk') {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { pasteFromClipboard(); }
+  }
 }
 
 export function mousemoveHandler(e) {
@@ -76,9 +53,29 @@ export function mouseupHandler() { mouse.down = false; }
 
 function hit(b, x, y) { return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; }
 export function handleClick(x, y) {
-  hideMobileInput();
   const u = layout();
+  if (State.lastInputRect && hit(State.lastInputRect, x, y)) return;
+  hideMobileInput();
   const all = [...u.buttons, ...u.clickZones];
   for (const b of all) { if (hit(b, x, y)) { b.onClick && b.onClick(); return; } }
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+  cvs.addEventListener('touchstart', (e) => {
+    if (!IS_MOBILE) return;
+    if (!State.lastInputRect) return;
+    const touch = e.changedTouches[0];
+    const r = cvs.getBoundingClientRect();
+    const x = touch.clientX - r.left;
+    const y = touch.clientY - r.top;
+    const { x:ix, y:iy, w:iw, h:ih } = State.lastInputRect;
+    const inside = x >= ix && x <= ix+iw && y >= iy && y <= iy+ih;
+    if (inside && mobileInput) {
+      e.preventDefault();
+      mobileInput.focus();
+      const v = mobileInput.value || '';
+      mobileInput.setSelectionRange(v.length, v.length);
+    }
+  }, { passive:false });
+});
 
