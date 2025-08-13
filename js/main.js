@@ -1,6 +1,6 @@
 // main.js
 import './utils.js';
-import './constants.js';
+import { SIZES } from './constants.js';
 import './date-utils.js';
 import './storage.js';
 import './srs.js';
@@ -19,6 +19,10 @@ function fitCanvas() {
   cvs.width = w * dpr; cvs.height = h * dpr;
   cvs.style.width = w + 'px'; cvs.style.height = h + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const scale = Math.min(w / 800, h / 600);
+  SIZES.hiraganaQuizPx = Math.max(20, Math.floor(24 * scale));
+  SIZES.hiraganaQuizOffset = Math.floor(40 * scale);
+  SIZES.hiraganaManagePx = Math.max(10, Math.floor(12 * scale));
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -32,6 +36,22 @@ window.addEventListener('DOMContentLoaded', () => {
   cvs.addEventListener('mousemove', mousemoveHandler);
   cvs.addEventListener('mousedown', mousedownHandler);
   window.addEventListener('mouseup', mouseupHandler);
+
+  cvs.addEventListener('touchstart', (e) => {
+    const t = e.changedTouches[0];
+    mousemoveHandler(t);
+    mousedownHandler();
+    e.preventDefault();
+  }, { passive: false });
+  cvs.addEventListener('touchmove', (e) => {
+    const t = e.changedTouches[0];
+    mousemoveHandler(t);
+    e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchend', (e) => {
+    mouseupHandler();
+    e.preventDefault();
+  }, { passive: false });
 
   requestAnimationFrame(render);
 

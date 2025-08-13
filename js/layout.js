@@ -1,6 +1,7 @@
 import { cvs, ctx } from './main.js';
 import { roundRect } from './canvas-helpers.js';
 import { C, SIZES } from './constants.js';
+import { showMobileInput } from './input-handlers.js';
 import {
   State,
   currentCard,
@@ -34,7 +35,8 @@ export function layout() {
   const streakBox = { x: bar.x + prog.w + 12, y: bar.y - 2, w: 220, h: 22 };
 
   // Botões principais
-  const topBtnW = 112, topBtnH = 36;
+  const topBtnW = Math.max(64, Math.floor((W - pad * 2 - 16 * 4) / 5));
+  const topBtnH = Math.max(32, Math.floor(topBtnW * 0.32));
   const rightBoxW = topBtnW * 5 + 16 * 4;
   const rightBox = { x: W - pad - rightBoxW, y: bar.y - 10, w: rightBoxW, h: topBtnH };
 
@@ -46,7 +48,7 @@ export function layout() {
   buttons.push(btnStudy, btnTrain, btnQuiz, btnSum, btnList);
 
   // Engrenagem (Adicionar)
-  const gear = { x: pad, y: H - pad - 40, w: 40, h: 40, onClick: () => { State.mode = 'add'; State.focusField = 'hiragana'; } };
+  const gear = { x: pad, y: H - pad - 40, w: 40, h: 40, onClick: () => { State.mode = 'add'; State.focusField = 'hiragana'; showMobileInput(State.addForm.hiragana, v => { State.addForm.hiragana = v; }); } };
   clickZones.push(gear);
 
   // Card
@@ -61,7 +63,9 @@ export function layout() {
       { key: 'medio',  label: 'Médio'  },
       { key: 'facil',  label: 'Fácil'  },
     ];
-    const pw = 92, ph = 30, gap = 10;
+    const gap = 10;
+    const ph = Math.max(24, Math.floor(cardH * 0.05));
+    const pw = Math.max(60, Math.floor((cardW - gap * (defs.length - 1) - 48) / defs.length));
     let px = cx + 24, py = cy + 16;
     for (const p of defs) {
       const pill = { x: px, y: py, w: pw, h: ph, label: p.label, active: State.trainFilter === p.key };
@@ -78,6 +82,11 @@ export function layout() {
     if (!State.showAnswer) {
       const btnVer = { x: cx + cardW - 140, y: cy + cardH - 56, w: 120, h: 44, label: 'Verificar', onClick: checkAnswer };
       buttons.push(btnVer);
+      const startY = cy + (State.mode === 'train' ? 72 : 28);
+      const ry = startY + Math.max(SIZES.hiraganaStudyMin, Math.floor(cardH * SIZES.hiraganaStudyFactor)) + 8;
+      let afterY = ry + 36;
+      const ansY = Math.min(cy + cardH - 120, afterY + 16);
+      clickZones.push({ x: cx + 24, y: ansY - 24, w: cardW - 48 - 150, h: 48, onClick: () => { showMobileInput(State.input, v => { State.input = v; }); } });
     } else {
       const bx = cx + cardW - (120 * 3 + 12 * 2) - 16, by = cy + cardH - 56;
       const bHard = { x: bx,                y: by, w: 120, h: 44, label: 'Difícil (1)', fill: C.danger, onClick: () => chooseDifficulty('dificil') };
@@ -101,9 +110,9 @@ export function layout() {
     const bBulk = { x: ix,         y: cy + 372, w: iw,  h: 44, label: 'Colar lista (Importar em massa)', fill: '#334155', onClick: openBulk };
     buttons.push(bTab, bAdd, bBulk);
 
-    clickZones.push({ x: i1.x, y: i1.y, w: i1.w, h: i1.h, onClick: () => { State.focusField = 'hiragana'; } });
-    clickZones.push({ x: i2.x, y: i2.y, w: i2.w, h: i2.h, onClick: () => { State.focusField = 'romaji';   } });
-    clickZones.push({ x: i3.x, y: i3.y, w: i3.w, h: i3.h, onClick: () => { State.focusField = 'pt';       } });
+    clickZones.push({ x: i1.x, y: i1.y, w: i1.w, h: i1.h, onClick: () => { State.focusField = 'hiragana'; showMobileInput(State.addForm.hiragana, v => { State.addForm.hiragana = v; }); } });
+    clickZones.push({ x: i2.x, y: i2.y, w: i2.w, h: i2.h, onClick: () => { State.focusField = 'romaji'; showMobileInput(State.addForm.romaji, v => { State.addForm.romaji = v; }); } });
+    clickZones.push({ x: i3.x, y: i3.y, w: i3.w, h: i3.h, onClick: () => { State.focusField = 'pt'; showMobileInput(State.addForm.pt, v => { State.addForm.pt = v; }); } });
   }
 
   // BULK
