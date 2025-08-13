@@ -59,11 +59,8 @@ export function keydownHandler(e) {
 }
 
 export function mousemoveHandler(e) {
-  const can = cvs || document.getElementById('app');
-  if (!can) return;
-  const r = can.getBoundingClientRect();
-  mouse.x = e.clientX - r.left;
-  mouse.y = e.clientY - r.top;
+  const r = cvs.getBoundingClientRect();
+  mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
 }
 export function mousedownHandler() { mouse.down = true; handleClick(mouse.x, mouse.y); }
 export function mouseupHandler() { mouse.down = false; }

@@ -2,8 +2,7 @@ import { cvs } from './main.js';
 import { SIZES } from './constants.js';
 
 export function layout(){
-  const W = cvs?.clientWidth || 800;
-  const H = cvs?.clientHeight || 600;
+  const W = cvs.clientWidth, H = cvs.clientHeight;
   const pad = Math.max(12, Math.floor(W*0.02));
 
   const safeTop = pad + SIZES.headerPadY;
