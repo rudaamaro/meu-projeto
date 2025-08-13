@@ -17,7 +17,9 @@ export const State={
     bulkText:'',
     trainFilter:'todas',
     quiz:{current:null, options:[], correctIndex:-1, selectedIndex:-1},
-    lastInputRect:null
+    lastInputRect:null,
+    lastBulkRect:null,
+    menuOpen:false
   };
 
 export let currentCard=null;
