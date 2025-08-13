@@ -7,3 +7,14 @@ export const SIZES={
   hiraganaQuizOffset:40,
   hiraganaManagePx:12
 };
+
+export const IS_MOBILE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// Ajustes suaves para fontes/espacamentos no mobile
+if (typeof SIZES !== 'undefined') {
+  SIZES.hiraganaStudyFactor = IS_MOBILE ? 0.11 : (SIZES.hiraganaStudyFactor ?? 0.13);
+  SIZES.hiraganaStudyMin    = IS_MOBILE ? 24   : (SIZES.hiraganaStudyMin ?? 28);
+  SIZES.hiraganaQuizPx      = IS_MOBILE ? 16   : (SIZES.hiraganaQuizPx ?? 18);
+  SIZES.hiraganaManagePx    = IS_MOBILE ? 11   : (SIZES.hiraganaManagePx ?? 12);
+  SIZES.hiraganaQuizOffset  = IS_MOBILE ? 2    : (SIZES.hiraganaQuizOffset ?? 6);
+}
