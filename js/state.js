@@ -27,7 +27,16 @@ export function pickNext(){ const p=dueCards(); currentCard=p.length?p[Math.floo
 export function trainPool(){ if(State.trainFilter==='todas') return deck; return deck.filter(c=>c.cat===State.trainFilter); }
 export function pickNextTrain(){ const pool=trainPool(); currentCard=pool.length?pool[Math.floor(Math.random()*pool.length)]:null; State.input=''; State.showAnswer=false; }
 
-const pasteArea=document.createElement('textarea'); pasteArea.style.position='fixed'; pasteArea.style.opacity='0'; pasteArea.style.pointerEvents='none'; document.body.appendChild(pasteArea);
+const pasteArea = typeof document !== 'undefined'
+  ? (() => {
+      const ta = document.createElement('textarea');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      ta.style.pointerEvents = 'none';
+      document.body.appendChild(ta);
+      return ta;
+    })()
+  : null;
 
 export function addCardFromForm(){
   const f=State.addForm;
@@ -70,7 +79,12 @@ export function chooseDifficulty(level){
 }
 
 export function openBulk(){State.mode='bulk'; State.bulkText=''; State.message='Cole sua lista com Ctrl+V';}
-export function pasteFromClipboard(){pasteArea.value=''; pasteArea.focus(); setTimeout(()=>{State.bulkText=pasteArea.value; State.message='Texto colado!';},10);}
+export function pasteFromClipboard(){
+  if(!pasteArea) return;
+  pasteArea.value='';
+  pasteArea.focus();
+  setTimeout(()=>{State.bulkText=pasteArea.value; State.message='Texto colado!';},10);
+}
 export function parseBulk(text){const out=[]; const lines=(text||'').split(/\r?\n/); for(let line of lines){line=line.trim(); if(!line)continue; const parts=line.split(/\t|\s*;\s*/).map(s=>s.trim()).filter(Boolean); if(parts.length<3)continue; const [hiragana,romaji,...rest]=parts; const trs=rest.join(';'); out.push({hiragana:hiragana,romaji:romaji,pt:trs});} return out;}
 export function addBulk(text){
   const items=parseBulk(text); if(!items.length){State.message='Nada válido encontrado';return;}

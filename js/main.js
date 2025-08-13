@@ -1,6 +1,6 @@
 // main.js
 import './utils.js';
-import { SIZES } from './constants.js';
+import { SIZES, IS_MOBILE } from './constants.js';
 import './date-utils.js';
 import './storage.js';
 import './srs.js';
@@ -12,8 +12,7 @@ import { keydownHandler, mousemoveHandler, mousedownHandler, mouseupHandler } fr
 import { State, checkAnswer } from './state.js';
 
 export let cvs, ctx, mobileInput;
-export const IS_MOBILE =
-  /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+export { IS_MOBILE };
 
 function fitCanvas() {
   const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
@@ -40,7 +39,8 @@ export function hideMobileInput(){
   mobileInput.style.top  = '-9999px';
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
   cvs = document.getElementById('app');
   ctx = cvs.getContext('2d');
 
@@ -76,7 +76,8 @@ window.addEventListener('DOMContentLoaded', () => {
   if (params.has('test')) {
     import('./tests-smoke.js').catch(console.error);
   }
-});
+  });
+}
 
 export function syncMobileInput(rectOrNull){
   if (!IS_MOBILE || !mobileInput) return;
