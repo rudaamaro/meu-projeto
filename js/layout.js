@@ -20,7 +20,8 @@ import { startQuizQuestion, selectQuizOption, nextQuiz } from './quiz.js';
 import { speakJP } from './speech.js';
 
 export function layout() {
-    const W = cvs.clientWidth, H = cvs.clientHeight;
+    const W = cvs ? cvs.clientWidth : 800,
+          H = cvs ? cvs.clientHeight : 600;
     const pad = Math.max(12, Math.floor(W * 0.02));
   const cardW = Math.min(880, W - pad * 2);
   const cardH = Math.min(560, H - pad * 3 - 64);
@@ -129,18 +130,22 @@ export function layout() {
     const cols   = [ 40, 180,        160,      80,    100,     70,      60,  40,  40 ];
 
     // Barra de cabeçalho
-    roundRect(card.x + 16, card.y + 16, listW, 28, 10);
-    ctx.fillStyle = '#0f1422'; ctx.fill(); ctx.strokeStyle = C.stroke; ctx.stroke();
-    ctx.fillStyle = C.sub; ctx.font = '600 14px system-ui'; ctx.textBaseline = 'middle';
+    if(ctx){
+      roundRect(card.x + 16, card.y + 16, listW, 28, 10);
+      ctx.fillStyle = '#0f1422'; ctx.fill(); ctx.strokeStyle = C.stroke; ctx.stroke();
+      ctx.fillStyle = C.sub; ctx.font = '600 14px system-ui'; ctx.textBaseline = 'middle';
+    }
 
     let xh = listX + 12;
     for (let i = 0; i < header.length; i++) {
-      ctx.textAlign = (i === 1 || i === 2) ? 'left' : 'center';
-      ctx.fillText(
-        header[i],
-        (i === 1 || i === 2) ? xh : xh + cols[i] / 2,
-        card.y + 30
-      );
+      if(ctx){
+        ctx.textAlign = (i === 1 || i === 2) ? 'left' : 'center';
+        ctx.fillText(
+          header[i],
+          (i === 1 || i === 2) ? xh : xh + cols[i] / 2,
+          card.y + 30
+        );
+      }
       xh += cols[i];
     }
 
@@ -152,29 +157,33 @@ export function layout() {
       const it = items[r];
       const y  = listY + row * rowH;
 
-      if (State.manage.selected === it.id) {
+      if (State.manage.selected === it.id && ctx) {
         roundRect(listX, y, listW, rowH - 4, 10);
         ctx.fillStyle = 'rgba(67,182,255,0.12)'; ctx.fill();
       }
 
       let x = listX + 12;
-      ctx.fillStyle = C.text; ctx.font = '500 14px system-ui'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-      ctx.fillText(String(r + 1), x + cols[0] / 2 - 12, y + rowH / 2);
+      if(ctx){
+        ctx.fillStyle = C.text; ctx.font = '500 14px system-ui'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+        ctx.fillText(String(r + 1), x + cols[0] / 2 - 12, y + rowH / 2);
+      }
 
       x += cols[0];
-      ctx.textAlign = 'left';
-      const prevFont = ctx.font;
-      ctx.font = `500 ${SIZES.hiraganaManagePx}px system-ui`;
-      ctx.fillText(it.hiragana, x, y + rowH / 2);
-      ctx.font = prevFont;
+      if(ctx){
+        ctx.textAlign = 'left';
+        const prevFont = ctx.font;
+        ctx.font = `500 ${SIZES.hiraganaManagePx}px system-ui`;
+        ctx.fillText(it.hiragana, x, y + rowH / 2);
+        ctx.font = prevFont;
+      }
 
-      x += cols[1]; ctx.textAlign = 'left';   ctx.fillStyle = C.sub;  ctx.fillText(it.romaji, x, y + rowH / 2);
-      x += cols[2]; ctx.textAlign = 'center'; ctx.fillStyle = C.text; ctx.fillText((it.cat || 'none'), x + cols[3] / 2 - 10, y + rowH / 2);
-      x += cols[3]; ctx.textAlign = 'center';                        ctx.fillText(it.due || '',        x + cols[4] / 2 - 10, y + rowH / 2);
-      x += cols[4];                                                 ctx.fillText(String(it.ivl || 0), x + cols[5] / 2 - 10, y + rowH / 2);
-      x += cols[5];                                                 ctx.fillText((it.ef || 2.5).toFixed(2), x + cols[6] / 2 - 10, y + rowH / 2);
-      x += cols[6]; ctx.fillStyle = '#22c55e';                      ctx.fillText(String(it.ok  || 0), x + cols[7] / 2 - 10, y + rowH / 2);
-      x += cols[7]; ctx.fillStyle = '#ef4444';                      ctx.fillText(String(it.err || 0), x + cols[8] / 2 - 10, y + rowH / 2);
+      x += cols[1]; if(ctx){ ctx.textAlign = 'left';   ctx.fillStyle = C.sub;  ctx.fillText(it.romaji, x, y + rowH / 2); }
+      x += cols[2]; if(ctx){ ctx.textAlign = 'center'; ctx.fillStyle = C.text; ctx.fillText((it.cat || 'none'), x + cols[3] / 2 - 10, y + rowH / 2); }
+      x += cols[3]; if(ctx){ ctx.textAlign = 'center';                        ctx.fillText(it.due || '',        x + cols[4] / 2 - 10, y + rowH / 2); }
+      x += cols[4]; if(ctx){                                                ctx.fillText(String(it.ivl || 0), x + cols[5] / 2 - 10, y + rowH / 2); }
+      x += cols[5]; if(ctx){                                                ctx.fillText((it.ef || 2.5).toFixed(2), x + cols[6] / 2 - 10, y + rowH / 2); }
+      x += cols[6]; if(ctx){ ctx.fillStyle = '#22c55e';                      ctx.fillText(String(it.ok  || 0), x + cols[7] / 2 - 10, y + rowH / 2); }
+      x += cols[7]; if(ctx){ ctx.fillStyle = '#ef4444';                      ctx.fillText(String(it.err || 0), x + cols[8] / 2 - 10, y + rowH / 2); }
 
       // Seleção da linha
       clickZones.push({ x: listX, y, w: listW, h: rowH - 4, onClick: () => { State.manage.selected = it.id; } });
@@ -186,8 +195,10 @@ export function layout() {
     const bDel  = { x: cx + cardW - 160 - 16, y: cy + cardH - 56, w: 160, h: 40, label: 'Excluir selecionado', fill: '#dc2626', onClick: deleteSelected };
     buttons.push(bPrev, bNext, bDel);
 
-    ctx.fillStyle = C.sub; ctx.font = '500 12px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(`Página ${State.manage.page + 1}/${totalPages} — clique numa linha para selecionar`, cx + 16, cy + cardH - 64);
+    if(ctx){
+      ctx.fillStyle = C.sub; ctx.font = '500 12px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(`Página ${State.manage.page + 1}/${totalPages} — clique numa linha para selecionar`, cx + 16, cy + cardH - 64);
+    }
   }
 
   // QUIZ — define botões/zonas de clique
